@@ -14,6 +14,11 @@
 #include <filesystem> 
 #include <array>
 #include <omp.h>
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 
 
 
@@ -22,6 +27,7 @@ class Environment{
 public:
     Environment(std::string folder, std::string set, std::string tCellTrajectoryPath);
     //destructor needed
+    bool visualize;
     void simulate(double tstep);
 
 private:
@@ -30,14 +36,14 @@ private:
     void internalCellFunctions(double tstep, size_t step_count);
     void recruitImmuneCells(double tstep, size_t step_count);
     std::array<double, 2> recruitmentLocation();
-    void tumorSize();
+    void tumorSize(int i);
     void necrosis(double tstep);
     double calculateDiffusibles(std::array<double, 2> x);
 
     void save(double tstep, double tstamp);
     void loadParams();
 
-    void initializeCells();
+    void initializeCells(std::array<double, 2> coords, double clusterRadius, int celltype);
     void calculateForces(double tstep);
     void updateTimeSeries();
 
@@ -93,6 +99,18 @@ private:
     int day;
 
     std::mt19937 mt;
+
+    // simulation params
+    GLFWwindow* createWindow(int width, int height, const char* title, bool active);
+    void drawModel(bool active, GLFWwindow* win, int scale);
+    void updateWindow(GLFWwindow* win);
+    std::vector<int> setColor(int cellType, int cellState);
+    std::vector<int> setColor(int cellState);
+    void drawCircle(float x, float y, float radius, std::vector<int> color, int scale);
+    void drawCellOutlines(float x, float y, float radius,int scale);
+    void saveToJPG(const char* filepath, GLFWwindow* win);
+    std::array<std::vector<Cell>,8> createSubLists();
+
 };
 
 #endif //IMMUNE_MODEL_ENVIRONMENT_H

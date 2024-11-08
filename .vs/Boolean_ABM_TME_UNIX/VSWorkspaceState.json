@@ -1,0 +1,8 @@
+{
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "Boolean_ABM_TME_UNIX\\out\\build\\x64-Debug",
+      "Boolean_ABM_TME_UNIX\\out\\install\\x64-Debug"
+    ]
+  }
+}

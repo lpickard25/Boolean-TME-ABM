@@ -32,6 +32,11 @@ Cell::Cell(std::array<double, 2> loc, int idx, std::vector<std::vector<double>> 
     x = loc;
     id = idx;
 
+    if(std::isnan(x[0]) || std::isnan(x[1])) {
+        std::cerr << "constructor no loc"<<"attemptedType" << type <<std::endl;
+        exit(-1);
+    }
+
     radius = 0;
     compressed = false;
     currentOverlap = 0;
@@ -101,7 +106,6 @@ std::array<double, 2> Cell::repulsiveForce(std::array<double, 2> dx, double othe
     double dxNorm = calcNorm(dx);
     std::array<double, 2> dxUnit = {dx[0]/dxNorm, dx[1]/dxNorm};
     double sij = radius + otherRadius;
-
     double scaleFactor = mu*sij*log10(1 + (dxNorm - sij)/sij);
     double F0 = dxUnit[0]*scaleFactor;
     double F1 = dxUnit[1]*scaleFactor;
@@ -113,7 +117,9 @@ void Cell::calculateForces(std::array<double, 2> otherX, double otherRadius, int
     /*
      * assume attractive force only between cancer cells
      */
+
     double distance = calcDistance(otherX);
+
     if(distance < rmax){
         std::array<double, 2> dx = {(otherX[0]-x[0]),
                                     (otherX[1]-x[1])};
@@ -130,19 +136,25 @@ void Cell::calculateForces(std::array<double, 2> otherX, double otherRadius, int
 }
 
 void Cell::resolveForces(double dt, std::array<double, 2> &tumorCenter, double &necroticRadius, double &necroticForce) {
-    /*
-     * if the cell is touching the necrotic core, push it outward
-     * numerically solve forces
-     */
-    if(calcDistance(tumorCenter) < necroticRadius+radius){
+
+    if(calcDistance(tumorCenter)+radius < necroticRadius+radius){
         std::array<double, 2> dx = {x[0] - tumorCenter[0],
                                     x[1] - tumorCenter[1]};
         dx = unitVector(dx);
+        if(std::isnan(dx[0]) || std::isnan(dx[1])) {
+            std::cerr << "error in resolve forces dx vec " << tumorCenter[0] << ", " << tumorCenter[1] << std::endl;
+            std::cerr << "x = " << x[0] << ", " << x[1] << std::endl;
+            exit(-1);
+        }
         if(!std::isnan(dx[0])) {
             currentForces[0] += necroticForce * dx[0];
             currentForces[1] += necroticForce * dx[1];
         }
     }
+    /*
+     * if the cell is touching the necrotic core, push it outward
+     * numerically solve forces
+     */
 
     x[0] += (dt/damping)*currentForces[0];
     x[1] += (dt/damping)*currentForces[1];
@@ -159,15 +171,19 @@ void Cell::resetForces() {
     currentForces = {dis(mt),dis(mt)};
 }
 
-void Cell::neighboringCells(std::array<double, 2> otherX, int otherID){
+void Cell::neighboringCells(std::array<double, 2> otherX, int otherID, int otherState){
     /*
      * determine which cells are within 2*maximum interaction distance
      * stores the index in cell_list (in Environment) of the neighboring cells
      */
     double dis = calcDistance(otherX);
-    if(dis <= 10*rmax){
+    if(dis <= 10*rmax){     //rmax = 1.5*radius*2 (used to be 10*rmax)
         neighbors.push_back(otherID);
     }
+    else if (dis <= 100 && otherState == 3) {
+        distantCancerNeighbors.push_back(otherX);
+    }
+
 }
 
 // OVERLAP FUNCTIONS
@@ -203,6 +219,7 @@ std::array<double, 3> Cell::proliferate(double dt) {
         std::array<double, 2> dx = {rd(mt),
                                       rd(mt)};
         double norm = calcNorm(dx);
+
         return{radius*(dx[0]/norm)+x[0],
                radius*(dx[1]/norm)+x[1],
                1};
@@ -279,57 +296,124 @@ void Cell::age(double dt, size_t step_count) {
             }
         }
     }
-    if(dis(mt) < deathProb){
+    if( dis(mt) < deathProb){
         state = -1;
     }
 }
+
+// OLD migrate function
+// void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
+//     if(type == 0 || state == -1 || state == 7){return;} // cancer cells, dead cells, suppressed CD8
+//     std::normal_distribution<double> vect(0.0, 1.0);
+//     std::array<double, 2> dx_random = {vect(mt), vect(mt)};
+//     dx_random = unitVector(dx_random);
+//
+//     std::array<double, 2> dx_direction = {tumorCenter[0] - x[0],
+//                                          tumorCenter[1] - x[1]};
+//
+//     dx_direction = unitVector(dx_direction);
+//
+//     std::array<double, 2> dx_movement = {0,0};
+//     for(int i=0; i<2; ++i){
+//         dx_movement[i] = migrationBias*dx_direction[i] + (1- migrationBias)*dx_random[i];
+//     }
+//     dx_movement = unitVector(dx_movement);
+//
+//     for(int i=0; i<x.size(); ++i){
+//         x[i] += dt*migrationSpeed*dx_movement[i];
+//         if(std::isnan(x[i])){
+//             throw std::runtime_error("migration NaN");
+//         }
+//     }
+// /*std::uniform_int_distribution<int> choose_cv(0, chemotaxVals.size()-1);
+//     int cv = choose_cv(mt);
+//     for(int i=0; i<chemotaxVals.size(); ++i){
+//         if(chemotaxVals[i] > chemotaxVals[cv]){cv = i;}
+//     }
+//     int z = 0;
+//     std::array<double, 2> dx_direction = {0,0};
+//     for(int i=-1; i<2; ++i){
+//         for(int j=-1; j<2; ++j){
+//             if(i==0 && j==0){continue;}
+//             if(z == cv){
+//                 dx_direction = {static_cast<double>(i),
+//                                 static_cast<double>(j)};
+//             }
+//             z++;
+//         }
+//     }*/
+// }
+
+// NEW migrate function
+
 
 void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
     /*
      * biased random-walk towards tumor center
      *
-     * commented out code for migrating up a pseudo-chemotaxix gradient
-     * it produces weird spatial behaviors and makes it difficult to recruit immune cells around the tumor
      */
     if(type == 0 || state == -1 || state == 7){return;} // cancer cells, dead cells, suppressed CD8
 
-    /*std::uniform_int_distribution<int> choose_cv(0, chemotaxVals.size()-1);
-    int cv = choose_cv(mt);
-    for(int i=0; i<chemotaxVals.size(); ++i){
-        if(chemotaxVals[i] > chemotaxVals[cv]){cv = i;}
-    }
-    int z = 0;
-    std::array<double, 2> dx_direction = {0,0};
-    for(int i=-1; i<2; ++i){
-        for(int j=-1; j<2; ++j){
-            if(i==0 && j==0){continue;}
-            if(z == cv){
-                dx_direction = {static_cast<double>(i),
-                                static_cast<double>(j)};
-            }
-            z++;
-        }
-    }*/
-    std::array<double, 2> dx_direction = {tumorCenter[0] - x[0],
-                                          tumorCenter[1] - x[1]};
+
     std::normal_distribution<double> vect(0.0, 1.0);
     std::array<double, 2> dx_random = {vect(mt), vect(mt)};
+    dx_random = unitVector(dx_random);
+
+    std::array <double,2> target = {0,0};
+
+    if (!distantCancerNeighbors.empty()) {
+        double tempdis = 100.0;
+        for (auto &c : distantCancerNeighbors) {
+            double dis = calcDistance(c);
+            if(dis < tempdis) {
+                target = c;
+                tempdis = dis;
+            }
+        }
+    }
+    else {
+        if (influences[3] < 0.75) {
+            for(int i=0; i<2; ++i){
+                x[i] += dt*migrationSpeed*dx_random[i];
+            }
+        } else {
+            for(int i=0; i<2; ++i) {
+                x[i] += dt*migrationSpeed_inTumor*dx_random[i];
+            }
+        }
+        return;
+    }
+
+    std::array<double, 2> dx_direction = {target[0] - x[0],
+                                          target[1] - x[1]};
 
     dx_direction = unitVector(dx_direction);
-    dx_random = unitVector(dx_random);
     std::array<double, 2> dx_movement = {0,0};
+
     for(int i=0; i<2; ++i){
-        dx_movement[i] = migrationBias*dx_direction[i] + (1- migrationBias)*dx_random[i];
+            dx_movement[i] = migrationBias*dx_direction[i] + (1- migrationBias)*dx_random[i];
     }
+
     dx_movement = unitVector(dx_movement);
 
-    for(int i=0; i<x.size(); ++i){
-        x[i] += dt*migrationSpeed*dx_movement[i];
-        if(std::isnan(x[i])){
-            throw std::runtime_error("migration NaN");
+    if (influences[3] < 0.75 ) {
+        for(int i=0; i<x.size(); ++i){
+            x[i] += dt*migrationSpeed*dx_movement[i];
+            if(std::isnan(x[i])){
+                throw std::runtime_error("migration NaN");
+            }
+        }
+    }
+    else {
+        for(int i=0; i<x.size(); ++i){
+            x[i] += dt*migrationSpeed_inTumor*dx_movement[i];
+            if(std::isnan(x[i])){
+                throw std::runtime_error("migration NaN");
+            }
         }
     }
 }
+
 
 void Cell::prolifState() {
     /*
@@ -337,8 +421,10 @@ void Cell::prolifState() {
      * right now, CD8 proliferation prob is set to 0, however leaving it in for future changes
      */
     if(type == 0){
-        canProlif = !(state == -1 || compressed);
-    } else if(type == 3){
+        //canProlif = !(state == -1 || compressed);
+        canProlif = false;
+    }
+    else if(type == 3){
         // CTLs -> presence of Th promotes their proliferation, M2 and Treg decrease it
         // assume CTLs need IL-2 from Th to proliferate
         canProlif = !(state == 7 || compressed);
@@ -419,7 +505,7 @@ std::vector<double> Cell::inheritanceProperties() {
     return {};
 }
 
-void Cell::indirectInteractions(double tstep) {
+void Cell::indirectInteractions(double tstep,size_t step_count) {
     /*
      * after determining total influences on the cell, run the indirect interaction functions
      */
@@ -444,7 +530,7 @@ void Cell::indirectInteractions(double tstep) {
         return;
     } else if (state == 6){
         // CD8 active
-        cd8_setKillProb();
+        cd8_setKillProb(step_count);
         return;
     } else if (state == 7){
         // CD8 suppressed
@@ -470,7 +556,7 @@ void Cell::directInteractions(int interactingState, std::array<double, 2> intera
         // cancer
         if(interactingState == 6){
             // interactionProperties = {radius, killProb}
-            cancer_dieFromCD8(interactingX, interactionProperties[0], interactionProperties[1], tstep);
+            //cancer_dieFromCD8(interactingX, interactionProperties[0], interactionProperties[1], tstep);
         }
         return;
     } else if (state == 4){

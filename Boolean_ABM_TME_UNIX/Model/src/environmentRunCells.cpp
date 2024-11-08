@@ -20,16 +20,21 @@ void Environment::neighborInfluenceInteractions(double tstep, size_t step_count)
     for(int i=0; i<cell_list.size(); ++i){
         // reset neighborhood and influence
         cell_list[i].neighbors.clear();
+        cell_list[i].distantCancerNeighbors.clear();
+        cell_list[i].closeCancerNeighbors.clear();
         cell_list[i].clearInfluence();
+
         for(auto &c : cell_list){
             // assume that a cell cannot influence itself
             if(cell_list[i].id != c.id){
-                cell_list[i].neighboringCells(c.x, c.id);
+                cell_list[i].neighboringCells(c.x, c.id, c.state);
                 cell_list[i].addInfluence(c.x, c.influenceRadius, c.state);
                 //cell_list[i].addChemotaxis(c.x, c.influenceRadius, c.type);
             }
+
         }
-        cell_list[i].indirectInteractions(tstep);
+        cell_list[i].indirectInteractions(tstep,step_count);
+
     }
 
 #pragma omp parallel for
@@ -41,12 +46,20 @@ void Environment::neighborInfluenceInteractions(double tstep, size_t step_count)
                                             tstep);
         }
     }
-
 #pragma omp parallel for
     for(int i=0; i<cell_list.size(); ++i){
         cell_list[i].differentiate(tstep);
     }
+
+
 }
+
+// std::array <double, 2> Environment::closestCancer(std::vector<int> candidates) {
+//     for (auto &c : candidates) {
+//         if (cell_list[c].state == 3) {
+//             int closestID = std::min()
+//     }
+// }
 
 void Environment::calculateForces(double tstep) {
     /*
@@ -59,10 +72,7 @@ void Environment::calculateForces(double tstep) {
     // divide tstep into smaller steps for solving
     // only solve forces between neighboring cells to improve computation time
     int Nsteps = static_cast<int>(tstep/dt);
-
-    // iterate through Nsteps, calculating and resolving forces between neighbors
-    // also includes migration
-    for(int q=0; q<Nsteps; ++q){
+    for(int q=0; q<Nsteps; ++q) {
         // migrate first
 #pragma omp parallel for
         for(int i=0; i<cell_list.size(); ++i){
@@ -70,29 +80,30 @@ void Environment::calculateForces(double tstep) {
         }
 
         // calc forces
+// #pragma omp parallel for
+//         for(int i=0; i<cell_list.size(); ++i){
+//
+//             for(auto &c : cell_list[i].neighbors){
+//                 cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type);
+//             }
+//         }
+//
+// #pragma omp parallel for
+//         for(int i=0; i<cell_list.size(); ++i){
+//             cell_list[i].resolveForces(dt, tumorCenter, necroticRadius, necroticForce);
+//         }
+     }
+
+        // calculate overlaps and proliferation states
 #pragma omp parallel for
         for(int i=0; i<cell_list.size(); ++i){
             for(auto &c : cell_list[i].neighbors){
-                cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type);
+                cell_list[i].calculateOverlap(cell_list[c].x, cell_list[c].radius);
             }
+            cell_list[i].isCompressed();
         }
 
-        // resolve forces
-#pragma omp parallel for
-        for(int i=0; i<cell_list.size(); ++i){
-            cell_list[i].resolveForces(dt, tumorCenter, necroticRadius, necroticForce);
-        }
     }
-
-    // calculate overlaps and proliferation states
-#pragma omp parallel for
-    for(int i=0; i<cell_list.size(); ++i){
-        for(auto &c : cell_list[i].neighbors){
-            cell_list[i].calculateOverlap(cell_list[c].x, cell_list[c].radius);
-        }
-        cell_list[i].isCompressed();
-    }
-}
 
 void Environment::internalCellFunctions(double tstep, size_t step_count) {
     /*
@@ -102,19 +113,22 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
      */
     int numCells = cell_list.size();
     for(int i=0; i<numCells; ++i){
-        cell_list[i].age(tstep, step_count);
+        //cell_list[i].age(tstep, step_count);
         // if in necrotic core, die
         if(cell_list[i].calcDistance(tumorCenter) < necroticRadius){
             cell_list[i].state = -1;
+            std::cout << "cell died" << std::endl;
         }
+
         cell_list[i].prolifState();
         std::array<double, 3> newLoc = cell_list[i].proliferate(tstep);
+
         if(newLoc[2] == 1){
             if(cell_list[i].type == 3){
-                int phenotypeIdx = getRandomNumber(tCellPhenotypeTrajectory.size()); 
+                int phenotypeIdx = getRandomNumber(tCellPhenotypeTrajectory.size());
                 std::vector<std::string> trajec_phenotype = get2dvecrow(tCellPhenotypeTrajectory, phenotypeIdx);
                 if(trajec_phenotype.empty() || trajec_phenotype.size() == 0){
-                    std::cerr << "WARNING INTERNAL CELL FUNCTIONS: t_cell_phenotype_Trajectory is empty!" << std::endl; 
+                    std::cerr << "WARNING INTERNAL CELL FUNCTIONS: t_cell_phenotype_Trajectory is empty!" << std::endl;
                 }
                 cell_list.push_back(Cell({newLoc[0], newLoc[1]},
                                      cell_list.size(),
@@ -122,6 +136,10 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
                                      cell_list[i].type, trajec_phenotype, step_count));
             }
             else{
+                if(std::isnan(newLoc[0]) || std::isnan(newLoc[1])) {
+                    std::cerr << cell_list[i].type << " in internal cell function" << newLoc[0] << newLoc[1] << std::endl;
+                    exit(-1);
+                }
                 cell_list.push_back(Cell({newLoc[0], newLoc[1]},
                                      cell_list.size(),
                                      cellParams,
@@ -154,6 +172,10 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
 
 void Environment::runCells(double tstep, size_t step_count) {
     neighborInfluenceInteractions(tstep, step_count);
+
     calculateForces(tstep);
+
     internalCellFunctions(tstep, step_count);
+
+
 }

@@ -1,0 +1,71 @@
+Package: egl-registry
+Version: 2024-01-25
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 4e72e931e51bcc9d133ee2a3f7b395a69fd45c96e5cee5a9977d127cc611e33a
+Description: EGL API and Extension Registry
+Status: install ok installed
+
+Package: vcpkg-cmake-config
+Version: 2024-05-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: b13b0fd1b3b2c1b9427e5d57eb4b5eba71e0a2ed51ea269a48554aceea58ad93
+Status: install ok installed
+
+Package: vcpkg-cmake
+Version: 2024-04-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 26618e02065c6c4b4fd11390dea8b5cf22d591d84209e1c09ca825725c3a42dc
+Status: install ok installed
+
+Package: glfw3
+Version: 3.4
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: e8498fc83f1d0f6690ba008114cd1a1c85656aa5d6c78b054be26f582516608d
+Description: GLFW is a free, Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development. It provides a simple, platform-independent API for creating windows, contexts and surfaces, reading input, handling events, etc.
+Status: install ok installed
+
+Package: opengl-registry
+Version: 2024-02-10
+Port-Version: 1
+Depends: egl-registry
+Architecture: x64-windows
+Multi-Arch: same
+Abi: f4c5a671071511fe91764484fa2ebf7d371ed2ce474079b1d75ec82673283baf
+Description: OpenGL, OpenGL ES, and OpenGL ES-SC API and Extension Registry
+Status: install ok installed
+
+Package: opengl
+Version: 2022-12-04
+Port-Version: 3
+Depends: opengl-registry
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 0ce68ef389c2c0bd7c0055f06fe25a481eb563ff9aba37248b2f79ba2f80fb82
+Description: Open Graphics Library (OpenGL)[3][4][5] is a cross-language, cross-platform application programming interface (API) for rendering 2D and 3D vector graphics.
+Status: install ok installed
+
+Package: glew
+Version: 2.2.0
+Port-Version: 3
+Depends: opengl, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 0bf114be4a75ca82aa2de4485820d179de5530daa263ca2c8fbbe634d7d057c9
+Description: The OpenGL Extension Wrangler Library (GLEW) is a cross-platform open-source C/C++ extension loading library.
+Status: install ok installed
+
+Package: stb
+Version: 2024-07-29
+Port-Version: 1
+Architecture: x64-windows
+Multi-Arch: same
+Abi: f3ee9caaa523298cfb9e3973241e6aa2ae83813d1ba199d7435343c60dddcf75
+Description: public domain header-only libraries
+Status: install ok installed
+

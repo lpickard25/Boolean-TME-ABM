@@ -42,9 +42,10 @@ void Environment::loadParams() {
 void Environment::save(double tstep, double tstamp) {
 
     std::ofstream myfile;
-    std::string day_dir = saveDir + "/cellLists/day_" + std::to_string(day);
-    std::string str = "mkdir -p " + day_dir;
+    std::string day_dir = saveDir + "\\cellLists\\day_" + std::to_string(day);
+    std::string str = "mkdir " + day_dir;
     const char *command = str.c_str();
+    std::cout<<command<<std::endl;
     std::system(command);
 
     myfile.open(saveDir+"/necroticRadius.csv");

@@ -28,7 +28,7 @@ public:
     void calculateForces(std::array<double, 2> otherX, double otherRadius, int &otherType);
     void resolveForces(double dt, std::array<double, 2> &tumorCenter, double &necroticRadius, double &necroticForce);
     void resetForces();
-    void neighboringCells(std::array<double, 2> otherX, int otherID);
+    void neighboringCells(std::array<double, 2> otherX, int otherID, int otherState);
 
     // overlap functions
     void calculateOverlap(std::array<double, 2> otherX, double otherRadius);
@@ -42,7 +42,7 @@ public:
     std::vector<double> inheritanceProperties();
     void age(double dt, size_t step_count);
     void migrate(double dt, std::array<double, 2> tumorCenter);
-    void indirectInteractions(double tstep);
+    void indirectInteractions(double tstep, size_t step_count);
     void directInteractions(int interactingState, std::array<double, 2> interactingX, std::vector<double> interactionProperties, double tstep);
     std::vector<double> directInteractionProperties(int interactingState, size_t step_count);
 
@@ -61,7 +61,7 @@ public:
     void cd4_differentiation(double dt);
 
     // CD8 specific
-    void cd8_setKillProb();
+    void cd8_setKillProb(size_t step_count);
     void cd8_pdl1Inhibition(std::array<double, 2> otherX, double otherRadius, double otherpdl1, double dt);
 
     // cancer specific
@@ -87,6 +87,8 @@ public:
     bool compressed;
     double currentOverlap;
     std::vector<int> neighbors;
+    std::vector<std::array <double, 2>> distantCancerNeighbors;
+    std::vector<std::array <double, 2>> closeCancerNeighbors;
 
     // age, division, and lifespan
     double divProb;
@@ -106,6 +108,7 @@ public:
     // migration
     double migrationSpeed;
     double migrationBias;
+    double migrationSpeed_inTumor;
 
     // cancer properties
     double pdl1Shift;

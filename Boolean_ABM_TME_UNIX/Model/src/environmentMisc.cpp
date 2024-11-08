@@ -1,22 +1,42 @@
 #include "Environment.h"
 #include "ModelUtil.h"
 
-void Environment::initializeCells() {
+void Environment::initializeCells(std::array<double,2> coords, double clusterRadius, int celltype) {
     /*
      * places the initial tumor
+     * cluster Radius is in # of cells
      */
 
-    double radiiCells = envParams[0];
-    cell_list.push_back(Cell({0.0,0.0}, 0, cellParams, 0, tCellPhenotypeTrajectory_1));
-    int q = 1;
-    for(int i=1; i<radiiCells; ++i){
-        double circumfrence = 2*i*cellParams[4][0]*3.1415;
-        double nCells = circumfrence/cellParams[4][0];
-        for(int j=0; j<nCells; ++j){
-            double x = i * cellParams[4][0] * cos(2 * 3.1415 * j / nCells);
-            double y = i * cellParams[4][0] * sin(2 * 3.1415 * j / nCells);
-            cell_list.push_back(Cell({x, y}, q, cellParams, 0, tCellPhenotypeTrajectory_1));
-            q++;
+
+    if (celltype == 3) {
+        // code needed for Tcell initialization
+        int phenotypeIdx = getRandomNumber(tCellPhenotypeTrajectory.size());
+        std::vector<std::string> trajec_phenotype = get2dvecrow(tCellPhenotypeTrajectory, phenotypeIdx);
+        cell_list.push_back(Cell(coords, cell_list.size(), cellParams, 3, trajec_phenotype,0));
+        for(int i=1; i<clusterRadius; ++i){
+            double circumfrence = 2*i*cellParams[4][0]*3.1415;
+            double nCells = circumfrence/cellParams[4][0];
+            for(int j=0; j<nCells; ++j){
+                double x = (i * cellParams[4][0] * cos(2 * 3.1415 * j / nCells))+coords[0];
+                double y = (i * cellParams[4][0] * sin(2 * 3.1415 * j / nCells))+coords[1];
+
+                cell_list.push_back(Cell({x,y}, cell_list.size(), cellParams, 3, trajec_phenotype,0));
+            }
+        }
+    }
+    else {
+        cell_list.push_back(Cell(coords, cell_list.size(), cellParams, celltype, tCellPhenotypeTrajectory_1));
+
+        double radiiCells = envParams[0];
+        for(int i=1; i<clusterRadius; ++i){
+            double circumfrence = 2*i*cellParams[4][0]*3.1415;
+            double nCells = circumfrence/cellParams[4][0];
+            for(int j=0; j<nCells; ++j){
+                double x = (i * cellParams[4][0] * cos(2 * 3.1415 * j / nCells))+coords[0];
+                double y = (i * cellParams[4][0] * sin(2 * 3.1415 * j / nCells))+coords[1];
+
+                cell_list.push_back(Cell({x, y},cell_list.size(), cellParams, celltype, tCellPhenotypeTrajectory_1));
+            }
         }
     }
 }
@@ -28,10 +48,15 @@ void Environment::recruitImmuneCells(double tstep,  size_t step_count) {
 
     int numC = cancerTS[steps - recruitmentDelay*24/tstep];
 
+    // iterates through three recruitment rates
     for(int i=0; i<immuneCellRecRates.size(); ++i){
+        // rate times the number of cancer cells
         double recRate = immuneCellRecRates[i]*static_cast<double>(numC);
+        // number of cells to recruit is the rate times the tstep
         immuneCells2rec[i] += tstep*recRate;
+        // iterates while there are still cells left to recruit
         while(immuneCells2rec[i] >= 1){
+            // get recruitment location == the thing I need to change
             std::array<double, 2> recLoc = recruitmentLocation();
             
             //i==0 represents the idx associated with initializing a cd8 t cell
@@ -81,15 +106,33 @@ std::array<double, 2> Environment::recruitmentLocation() {
      * cells enter at a random angle from the tumor center
      */
     //std::uniform_real_distribution<double> angle(-1.0, 1.0);
+     // std::normal_distribution<double> angle(0.0,1.0);
+     // std::array<double, 2> dx = {angle(mt),
+     //                             angle(mt)};
+     // double norm = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
+     //
+     // std::uniform_real_distribution<double> loc(0.0, recDist);
+     // double distance = loc(mt) + tumorRadius;
+     //
+     // return {distance*(dx[0]/norm), distance*(dx[1]/norm)};
+
+    /*
+     * cells enter randomly within an area based on tumor center and tumor radius
+     * potentially also based on necrotic core if immune cells cant recruit there
+     */
     std::normal_distribution<double> angle(0.0,1.0);
     std::array<double, 2> dx = {angle(mt),
                                 angle(mt)};
     double norm = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
 
-    std::uniform_real_distribution<double> loc(0.0, recDist);
-    double distance = loc(mt) + tumorRadius;
+    double outerDistance = recDist + tumorRadius;
+    double innerDistance = 0;
+    std::uniform_real_distribution<double> loc(innerDistance, outerDistance);
+    double distance = loc(mt);
+    double xloc = distance*(dx[0]/norm) + tumorCenter[0];
+    double yloc = distance*(dx[1]/norm) + tumorCenter[1];
+    return {xloc, yloc};
 
-    return {distance*(dx[0]/norm), distance*(dx[1]/norm)};
 
     /*
      * recruit based on cytokine "concentrations". Recruit if a location is in a certain range
@@ -150,11 +193,19 @@ std::array<double, 2> Environment::recruitmentLocation() {
     return x;*/
 }
 
-void Environment::tumorSize(){
+void Environment::tumorSize(int i){
+
+
     tumorCenter = {0,0};
     double avgX = 0;
     double avgY = 0;
     double numC = 0;
+    for(auto &c : cell_list) {
+        if(std::isnan(c.x[0]) || std::isnan(c.x[1])) {
+            std::cerr << c.type << c.x[0] << c.x[1] << std::endl;
+            exit(-1);
+        }
+    }
     for(auto &c : cell_list){
         if(c.type == 0) {
             avgX += c.x[0];

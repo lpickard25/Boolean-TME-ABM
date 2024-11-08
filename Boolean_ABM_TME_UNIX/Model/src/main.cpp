@@ -1,5 +1,11 @@
+
+
 #include <iostream>
 #include "Environment.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 /*
  * CHANGE summing influences to multiplying (1 - inf)
@@ -60,7 +66,7 @@
  * ----------------
  * - in whole tumor mode, assume sufficient vascularization outside of tumor, then decrease effect going into the tumor using exponential decay
  *
- * POTENTAIL ANALYSES
+ * POTENTIAL ANALYSES
  * ------------------
  * - don't let cells die of age. at end of simulation, output distributions of cancer cell phenotype/distance to nearest immune cell that induces that phenotype
  */
@@ -72,17 +78,27 @@ int main(int argc, char **argv) {
     std::string dp_fac = argv[4]; 
     std::string kp_fac = argv[5];
 
-    std::string str = "rm -r ./"+folder+"/set_" + set; 
+    std::cout << std::filesystem::current_path() << std::endl;
+    std::string str = "del /f/q/s .\\"+folder+"\\set_" + set;
     const char *command = str.c_str();
     std::system(command);
 
-    // str = "python genParams.py ./"+folder+"/set_"+set+" "+set;
+    str = "rd /s/q .\\"+folder+"\\set_" +set;
+    command = str.c_str();
+    std::system(command);
+
+    str = "mkdir .\\"+folder+"\\set_"+set+"\\images";
+    command = str.c_str();
+    std::system(command);
+
+    // str = "python genParams.py ./"+folder+"/set_"+set+" "+pST+" "+dp_fac+" "+kp_fac;
     str = "python genParams.py "+folder+" "+set + " "+ pST + " " + dp_fac + " " + kp_fac;
     command = str.c_str();
     std::system(command);
 
     double start = omp_get_wtime();
-    Environment model(folder, set, "Model/phenotype_out/"); //can replace with a directory representing any other phenotype state 
+    Environment model(folder, set, "Model\\phenotype_out\\"); //can replace with a directory representing any other phenotype state
+    model.visualize = true;
     model.simulate(1);
     double stop = omp_get_wtime();
     std::cout << "Duration: " << (stop-start)/(60*60) << std::endl;
