@@ -57,8 +57,8 @@ void Cell::cd8_setKillProb(size_t step_count){
     // negInfluence is M2 + Treg
     double posInfluence = 1 - (1 - influences[1])*(1 - influences[4]);
     double negInfluence = 1 - (1 - influences[2])*(1 - influences[5]);
-
     double scale = posInfluence - negInfluence;
+
     //index from the boolean model output to find phenotype and modify
     size_t step_alive = step_count -  init_time;
     bool flag = false;
@@ -66,14 +66,14 @@ void Cell::cd8_setKillProb(size_t step_count){
         std::string phenotype = t_cell_phenotype_Trajectory[step_alive*pTypeStateTransition - 1];
         char phenotype_char = phenotype[0];
         switch(phenotype_char){
-            case 'N':
-                killProb = baseKillProb;
+				case 'N':
+						killProb = baseKillProb;
             break;
-            case 'M':
-                killProb = baseKillProb * 2;
+				case 'M':
+						killProb = baseKillProb * 2;
             flag = true;
             break;
-            default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
+				default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
                 killProb = baseKillProb / 10;
         }
     }
@@ -89,13 +89,13 @@ void Cell::cd8_setKillProb(size_t step_count){
         }
         // can set to E
         switch(phenotype_char){
-            case 'N':
-                killProb = baseKillProb;
+				case 'N':
+						killProb = baseKillProb;
             break;
-            case 'M':
-                killProb = baseKillProb * 2;
+				case 'M':
+						killProb = baseKillProb * 2;
             break;
-            default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
+				default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
                 killProb = baseKillProb / 10;
         }
     }

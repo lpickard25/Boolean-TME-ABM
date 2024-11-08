@@ -301,6 +301,7 @@ void Cell::age(double dt, size_t step_count) {
     }
 }
 
+
 // OLD migrate function
 // void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
 //     if(type == 0 || state == -1 || state == 7){return;} // cancer cells, dead cells, suppressed CD8
@@ -390,6 +391,7 @@ void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
     dx_direction = unitVector(dx_direction);
     std::array<double, 2> dx_movement = {0,0};
 
+
     for(int i=0; i<2; ++i){
             dx_movement[i] = migrationBias*dx_direction[i] + (1- migrationBias)*dx_random[i];
     }
@@ -411,7 +413,7 @@ void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
                 throw std::runtime_error("migration NaN");
             }
         }
-    }
+		}
 }
 
 
@@ -505,7 +507,9 @@ std::vector<double> Cell::inheritanceProperties() {
     return {};
 }
 
-void Cell::indirectInteractions(double tstep,size_t step_count) {
+
+void Cell::indirectInteractions(double tstep, size_t step_count) {
+
     /*
      * after determining total influences on the cell, run the indirect interaction functions
      */

@@ -107,6 +107,7 @@ public:
 
     // migration
     double migrationSpeed;
+    double migrationSpeed_inTumor; 
     double migrationBias;
     double migrationSpeed_inTumor;
 

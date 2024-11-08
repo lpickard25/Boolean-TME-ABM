@@ -47,6 +47,7 @@ cd8_tCellMigSpeed_inTumor = 204
 
 cellParams = np.zeros((14, 4))
 
+
 # cancer params
 cellParams[0, 0] = m  # mu
 cellParams[1, 0] = k  # kc
@@ -73,6 +74,7 @@ cellParams[9, 1] = tcellMigBias  # migration bias base
 cellParams[10, 1] = cd4PDL1  # pdl1 (when Treg)
 cellParams[11, 1] = cd4_tCellMigSpeed_inTumor
 
+
 # cd8 params
 cellParams[0, 2] = m  # mu
 cellParams[1, 2] = k  # kc
@@ -96,6 +98,7 @@ This value must be an integer. A recommended range is 1-10 but should not exceed
 cellParams[12, 2] = pST
 cellParams[13, 2] = cd8_tCellMigSpeed_inTumor
 
+
 # macrophage params
 cellParams[0, 3] = m  # mu
 cellParams[1, 3] = k  # kc
@@ -110,6 +113,7 @@ cellParams[9, 3] = 100.0  # influence distance
 cellParams[10, 3] = macMigBias  # migration bias
 cellParams[11, 3] = macPDL1  # pdl1
 cellParams[12, 3] = macMigSpeed_inTumor
+
 
 recParams = np.zeros((5, 1))
 recParams[0] = cd8RecRate # cd8RecRate

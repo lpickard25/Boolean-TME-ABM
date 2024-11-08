@@ -33,7 +33,8 @@ void Environment::neighborInfluenceInteractions(double tstep, size_t step_count)
             }
 
         }
-        cell_list[i].indirectInteractions(tstep,step_count);
+
+        cell_list[i].indirectInteractions(tstep, step_count);
 
     }
 
@@ -76,7 +77,7 @@ void Environment::calculateForces(double tstep) {
         // migrate first
 #pragma omp parallel for
         for(int i=0; i<cell_list.size(); ++i){
-            cell_list[i].migrate(dt, tumorCenter);
+            cell_list[i].migrate(dt, tumorCenter, tumorRadius);
         }
 
         // calc forces
