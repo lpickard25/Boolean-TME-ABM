@@ -1,0 +1,4 @@
+{
+  "enableCMake": true,
+  "sourceDirectory": "boolean_abm_tme_unix"
+}

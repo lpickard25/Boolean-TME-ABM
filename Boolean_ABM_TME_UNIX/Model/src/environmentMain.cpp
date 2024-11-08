@@ -1,5 +1,7 @@
 #include "Environment.h"
 #include "ModelUtil.h"
+#include <GLFW/glfw3.h>
+
 
 
 namespace fs = std::filesystem; 
@@ -63,7 +65,7 @@ Environment::Environment(std::string folder, std::string set, std::string tCellT
      * set environment variables to their respective values
      */
 
-    saveDir = "./"+folder+"/set_"+set;
+    saveDir = folder+"\\set_"+set;
     loadParams();
 
     // cd8RecRate = recParams[0];
@@ -75,7 +77,7 @@ Environment::Environment(std::string folder, std::string set, std::string tCellT
     }
     immuneCellRecTypes = {3, 1, 2}; // {CD8, macrophage, CD4} -> same order as RecRates
 
-    //recDist = recParams[3];
+    recDist = recParams[3];
     maxRecCytoConc = recParams[3];
     recruitmentDelay = recParams[4];
 
@@ -141,22 +143,77 @@ void Environment::simulate(double tstep) {
      * ends once time limit is reached or there are no more cancer cells
      */
 
-    initializeCells();
-    std::cout << "initializeCells done " << std::endl; 
-    tumorSize();
+    // included for visualization
+    int model_time = 0;
+    int saveInterval = 1;
+    int scale = 4;
+    int winWidth = 4000/scale;
+    int winHeight = 4000/scale;
+    GLFWwindow* win = createWindow(winWidth, winHeight, "ABM", true);
 
+    // og code
+    std::cout << "initializeCells begun " << std::endl;
+
+
+    // // initalize Cells for visualization of immune migration
+    // for (double i = -500.0; i <= 500.0; i+=50.0) {
+    //     initializeCells({i,500},1,0);
+    // }
+    // // for (double i = -525.0; i <= 525.0; i+=50.0) {
+    // //     initializeCells({i,600-i/9},1,0);
+    // // }
+    // for (double i = -500.0; i <= 450.0; i+=50.0) {
+    //     initializeCells({i,i},1,3);
+    // }
+
+    // initialize 2 cancer clusters
+    //initializeCells({400,500}, 5, 0);
+    // initializeCells({-500,-600},4, 0);
+    initializeCells({0,0}, 7, 0);
+
+    // more code for visualization
+    int dayNum = steps * tstep / 48;
+    std::string filepath = saveDir +"\\images\\tumorInitialization.jpg";
+    drawModel(visualize, win, scale);
+    const char* cstr = filepath.c_str();
+    saveToJPG(cstr, win);
+
+    // back to og code
+    std::cout << "initializeCells done " << std::endl; 
+
+    tumorSize(steps);
+    std::cout << "Initial Tumor Center: ";
+    for (int i = 0; i <2; i++) {
+        std::cout << tumorCenter[i]<<",";
+    }
+    std::cout << "; Tumor Radius: "<<tumorRadius << " necrotic radius: " << necroticRadius<<std::endl;
     save(tstep, steps*tstep);
+
     updateTimeSeries();
+
     std::cout << "starting simulations...\n";
+
     while(tstep*steps/24 < simulationDuration) {
-        recruitImmuneCells(tstep, tstep*steps); 
+        recruitImmuneCells(tstep, tstep*steps);
         runCells(tstep, tstep*steps);
-        tumorSize();
+        tumorSize(steps);
         necrosis(tstep);
 
         steps += 1;
         printStep(steps * tstep);
         updateTimeSeries();
+        model_time = steps;
+        if (fmod(steps * tstep, saveInterval) == 0) {
+
+            // creat openGl window
+            drawModel(visualize, win, scale);
+            int dayNum = steps * tstep / saveInterval;
+            std::string filepath = saveDir + "\\images\\tumor_day_"+std::to_string(dayNum)+".jpg";
+            // convert std::string to const char*
+            const char* cstr = filepath.c_str();
+            saveToJPG(cstr, win);
+
+        }
         if (fmod(steps * tstep, 24) == 0) {
             // save every simulation day
             save(tstep, steps*tstep);
@@ -168,9 +225,9 @@ void Environment::simulate(double tstep) {
                 numC++;
             }
         }
-        if (numC == 0) {
-            save(tstep, steps*tstep);
-            break;
-        }
+        // if (numC == 0) {
+        //     save(tstep, steps*tstep);
+        //     break;
+        //}
     }
 }

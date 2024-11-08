@@ -1,0 +1,64 @@
+Detecting compiler hash for triplet x64-windows...
+Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/cl.exe
+All requested packages are currently installed.
+Total install time: 2.4 us
+egl-registry is header-only and can be used from CMake via:
+
+  find_path(EGL_REGISTRY_INCLUDE_DIRS "EGL/egl.h")
+  target_include_directories(main PRIVATE ${EGL_REGISTRY_INCLUDE_DIRS})
+
+opengl-registry is header-only and can be used from CMake via:
+
+  find_path(OPENGL_REGISTRY_INCLUDE_DIRS "GL/glcorearb.h")
+  target_include_directories(main PRIVATE ${OPENGL_REGISTRY_INCLUDE_DIRS})
+
+opengl-registry provides pkg-config modules:
+
+  # Khronos OpenGL registry
+  khronos-opengl-registry
+
+The package opengl is compatible with built-in CMake targets via CMake v3.7 and prior syntax
+
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(main PRIVATE ${OPENGL_LIBRARIES})
+    target_include_directories(main PRIVATE ${OPENGL_INCLUDE_DIR})
+
+and the CMake v3.8 and beyond imported target syntax
+
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(main PRIVATE OpenGL::GL)
+
+introduction of various components
+
+    find_package(OpenGL REQUIRED COMPONENTS GL      # v3.8
+                                            GLU     # v3.8
+                                            GLX     # v3.10
+                                            EGL     # v3.10
+                                            OpenGL) # v3.10
+
+The OpenGL SDK is highly platform dependent and is usually an OS component. It's not realistic to build from source for every platform.
+
+    WINDOWS: is part of the Windows SDK which this package installs.
+    LINUX: the SDK may be installed from your distro's repo or from 3rd parties manually. There are too many to count.
+    APPLE: consult your distribution vendor on the state of OpenGL support: https://support.apple.com/en-us/HT202823
+
+The package glew is compatible with built-in CMake targets:
+
+    find_package(GLEW REQUIRED)
+    target_link_libraries(main PRIVATE GLEW::GLEW)
+
+glfw3 provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(glfw3 CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE glfw)
+
+glfw3 provides pkg-config modules:
+
+  # A multi-platform library for OpenGL, window and input
+  glfw3
+
+The package stb provides CMake targets:
+
+    find_package(Stb REQUIRED)
+    target_include_directories(main PRIVATE ${Stb_INCLUDE_DIR})

@@ -1,0 +1,12 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "Boolean_ABM_TME_UNIX\\CMakeLists.txt",
+      "projectTarget": "runModel.exe",
+      "name": "runModel.exe"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\lgpda\source\repos\Boolean-TME-ABM\Boolean_ABM_TME_UNIX\CMakeFiles\fb05b2447ee14dca18ec814165aa62dc\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{F1A3BE45-117B-32F6-A929-48A4275ECCD1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
