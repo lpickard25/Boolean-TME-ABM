@@ -42,17 +42,17 @@ void Environment::loadParams() {
 void Environment::save(double tstep, double tstamp) {
 
     std::ofstream myfile;
-    std::string day_dir = saveDir + "\\cellLists\\day_" + std::to_string(day);
-    std::string str = "mkdir " + day_dir;
-    const char *command = str.c_str();
-    std::cout<<command<<std::endl;
-    std::system(command);
+    std::string day_dir = saveDir + "\\cellLists";
+    // std::string str = "mkdir " + day_dir;
+    // const char *command = str.c_str();
+    // //std::cout<<command<<std::endl;
+    // std::system(command);
 
-    myfile.open(saveDir+"/necroticRadius.csv");
-    myfile << necroticRadius << std::endl;
-    myfile.close();
+    // myfile.open(saveDir+"/necroticRadius.csv");
+    // myfile << necroticRadius << std::endl;
+    // myfile.close();
 
-    myfile.open(day_dir+"/cells.csv");
+    myfile.open(day_dir+"/cells_day_"+std::to_string(day)+".csv");
     for(auto &cell : cell_list){
         //logging cell location, type and state 
         if(cell.type == 3){ //cd8 t cell
@@ -96,6 +96,7 @@ void Environment::save(double tstep, double tstamp) {
         }
     }
     myfile.close();
+    day++;
 
     /*myfile.open(day_dir+"/cancerCells.csv");
     for(auto &cell : cell_list){
@@ -145,67 +146,67 @@ void Environment::save(double tstep, double tstamp) {
     }
     myfile.close();*/
 
-    if(day == 0){
-        day++;
-        return;}
-
-    myfile.open(saveDir+"/cancerTS.csv");
-    myfile << cancerTS[0];
-    for(int i=1; i<cancerTS.size(); ++i){
-        myfile << "," << cancerTS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/cd8TS.csv");
-    myfile << cd8TS[0];
-    for(int i=1; i<cd8TS.size(); ++i){
-        myfile << "," << cd8TS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/cd4TS.csv");
-    myfile << cd4TS[0];
-    for(int i=1; i<cd4TS.size(); ++i){
-        myfile << "," << cd4TS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/m0TS.csv");
-    myfile << m0TS[0];
-    for(int i=1; i<m0TS.size(); ++i){
-        myfile << "," << m0TS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/m1TS.csv");
-    myfile << m1TS[0];
-    for(int i=1; i<m1TS.size(); ++i){
-        myfile << "," << m1TS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/m2TS.csv");
-    myfile << m2TS[0];
-    for(int i=1; i<m2TS.size(); ++i){
-        myfile << "," << m2TS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    myfile.open(saveDir+"/radiusTS.csv");
-    myfile << radiusTS[0];
-    for(int i=1; i<radiusTS.size(); ++i){
-        myfile << "," << radiusTS[i];
-    }
-    myfile << std::endl;
-    myfile.close();
-
-    ++day;
+    // if(day == 0){
+    //     day++;
+    //     return;}
+    //
+    // myfile.open(saveDir+"/cancerTS.csv");
+    // myfile << cancerTS[0];
+    // for(int i=1; i<cancerTS.size(); ++i){
+    //     myfile << "\n" << cancerTS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/cd8TS.csv");
+    // myfile << cd8TS[0];
+    // for(int i=1; i<cd8TS.size(); ++i){
+    //     myfile << "," << cd8TS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/cd4TS.csv");
+    // myfile << cd4TS[0];
+    // for(int i=1; i<cd4TS.size(); ++i){
+    //     myfile << "," << cd4TS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/m0TS.csv");
+    // myfile << m0TS[0];
+    // for(int i=1; i<m0TS.size(); ++i){
+    //     myfile << "," << m0TS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/m1TS.csv");
+    // myfile << m1TS[0];
+    // for(int i=1; i<m1TS.size(); ++i){
+    //     myfile << "," << m1TS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/m2TS.csv");
+    // myfile << m2TS[0];
+    // for(int i=1; i<m2TS.size(); ++i){
+    //     myfile << "," << m2TS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // myfile.open(saveDir+"/radiusTS.csv");
+    // myfile << radiusTS[0];
+    // for(int i=1; i<radiusTS.size(); ++i){
+    //     myfile << "," << radiusTS[i];
+    // }
+    // myfile << std::endl;
+    // myfile.close();
+    //
+    // ++day;
 
     /*int cd4idx = 0;
     int cd8idx = 0;
@@ -234,4 +235,16 @@ void Environment::save(double tstep, double tstamp) {
             ++cd8idx;
         }
     }*/
+}
+
+void Environment::saveTimeSeries() {
+    std::ofstream myfile;
+    myfile.open(saveDir+"/TimeSeries.csv");
+    myfile << "time_step,cancer,cd8_activate,cd8_suppressed,cd4_helper,cd4_regulatory,m0,m1,m2,radius" << std::endl;
+    for (int i=0; cancerTS.size() > i; ++i) {
+        myfile << i << "," << cancerTS[i] << "," << cd8TS[i] << "," << cd8_suppTS[i] << "," << cd4TS[i] << ","
+         << cd4_regTS[i] << "," << m0TS[i] << "," << m1TS[i] << "," << m2TS[i] << "," << radiusTS[i] << std::endl;
+    }
+    myfile.close();
+
 }

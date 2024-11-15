@@ -77,22 +77,22 @@ void Environment::calculateForces(double tstep) {
         // migrate first
 #pragma omp parallel for
         for(int i=0; i<cell_list.size(); ++i){
-            cell_list[i].migrate(dt, tumorCenter, tumorRadius);
+            cell_list[i].migrate(dt, tumorCenter);
         }
 
         // calc forces
-// #pragma omp parallel for
-//         for(int i=0; i<cell_list.size(); ++i){
-//
-//             for(auto &c : cell_list[i].neighbors){
-//                 cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type);
-//             }
-//         }
-//
-// #pragma omp parallel for
-//         for(int i=0; i<cell_list.size(); ++i){
-//             cell_list[i].resolveForces(dt, tumorCenter, necroticRadius, necroticForce);
-//         }
+#pragma omp parallel for
+        for(int i=0; i<cell_list.size(); ++i){
+
+            for(auto &c : cell_list[i].neighbors){
+                cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type);
+            }
+        }
+
+#pragma omp parallel for
+        for(int i=0; i<cell_list.size(); ++i){
+            cell_list[i].resolveForces(dt, tumorCenter, necroticRadius, necroticForce);
+        }
      }
 
         // calculate overlaps and proliferation states
@@ -114,7 +114,7 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
      */
     int numCells = cell_list.size();
     for(int i=0; i<numCells; ++i){
-        //cell_list[i].age(tstep, step_count);
+        cell_list[i].age(tstep, step_count);
         // if in necrotic core, die
         if(cell_list[i].calcDistance(tumorCenter) < necroticRadius){
             cell_list[i].state = -1;

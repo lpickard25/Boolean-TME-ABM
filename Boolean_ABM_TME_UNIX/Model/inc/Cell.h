@@ -109,7 +109,6 @@ public:
     double migrationSpeed;
     double migrationSpeed_inTumor; 
     double migrationBias;
-    double migrationSpeed_inTumor;
 
     // cancer properties
     double pdl1Shift;

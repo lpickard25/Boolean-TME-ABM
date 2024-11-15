@@ -16,11 +16,11 @@ fld = sys.argv[1]
 sim = int(sys.argv[2])
 # mcParams = np.loadtxt(fld+'/params.csv', delimiter=',')
 # params = mcParams[sim, :]
-pST = int(sys.argv[3]) #phenotype state transition 
+pST = int(sys.argv[3]) #phenotype state transition
 dp = float(sys.argv[4])
 kp = float(sys.argv[5])
 
-print("starting simulation with phenotype state transition: {}, death probability factor: {}, kill probability factor: {}".format(pST, dp, kp) )
+# print("starting simulation with phenotype state transition: {}, death probability factor: {}, kill probability factor: {}".format(pST, dp, kp) )
 
 cancerPDL1_m = 0.01 
 tcellMigBias = 0.076
@@ -34,7 +34,7 @@ cd8RecRate = 0.001 #0.0001
 cd4RecRate = 0.001
 macRecRate = 0.006
 recDelay = 2.85
-necroticGrowth = 0 #params[12]
+necroticGrowth = 0 #envparams[2]
 necrosisLimit = 940.3
 
 macMigSpeed_inTumor = 53.2
@@ -125,21 +125,18 @@ recParams[4] = recDelay # recruitment delay (days)
 
 envParams = np.zeros((5, 1))
 envParams[0] = 5.0  # initTumorSize x | circle radius
-envParams[1] = 20.0 # simulation duration (days)
+envParams[1] = 5.0 # simulation duration (days)
 envParams[2] = necroticGrowth # necrotic growth
 envParams[3] = 0.5 # necrotic region outward force
 envParams[4] = necrosisLimit # necrosis limit (accounts for diffusion limit of oxygen, but is adjustable based on the scale of the simulation)
 
 # os.system('mkdir -p ' + sys.argv[1] + '/params')
-saveFld = sys.argv[1]+'/set_'+sys.argv[2]+'/params'
-os.makedirs(saveFld)
-np.savetxt(saveFld+'/cellParams.csv', cellParams, delimiter=',')
-np.savetxt(saveFld+'/recParams.csv', recParams, delimiter=',')
-np.savetxt(saveFld+'/envParams.csv', envParams, delimiter=',')
+saveFld1 = sys.argv[1]+'/set_'+sys.argv[2]+'/params'
+saveFld2 = sys.argv[1]+'/set_'+sys.argv[2]+'/cellLists'
+os.makedirs(saveFld1)
+os.makedirs(saveFld2)
+np.savetxt(saveFld1+'/cellParams.csv', cellParams, delimiter=',')
+np.savetxt(saveFld1+'/recParams.csv', recParams, delimiter=',')
+np.savetxt(saveFld1+'/envParams.csv', envParams, delimiter=',')
 
-# np.savetxt(sys.argv[1] + '/params/cellParams.csv', cellParams, delimiter=',')
-# np.savetxt(sys.argv[1] + '/params/recParams.csv', recParams, delimiter=',')
-# np.savetxt(sys.argv[1] + '/params/envParams.csv', envParams, delimiter=',')
-
-
-print('------Parameters Grid Done-----\n')
+# print('------Parameters Grid Done-----\n')

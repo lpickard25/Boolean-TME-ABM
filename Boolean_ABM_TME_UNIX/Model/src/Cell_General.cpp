@@ -346,8 +346,6 @@ void Cell::age(double dt, size_t step_count) {
 // }
 
 // NEW migrate function
-
-
 void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
     /*
      * biased random-walk towards tumor center
@@ -413,7 +411,7 @@ void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
                 throw std::runtime_error("migration NaN");
             }
         }
-		}
+	}
 }
 
 
@@ -423,8 +421,8 @@ void Cell::prolifState() {
      * right now, CD8 proliferation prob is set to 0, however leaving it in for future changes
      */
     if(type == 0){
-        //canProlif = !(state == -1 || compressed);
-        canProlif = false;
+        canProlif = !(state == -1 || compressed);
+        //canProlif = false;
     }
     else if(type == 3){
         // CTLs -> presence of Th promotes their proliferation, M2 and Treg decrease it
@@ -560,7 +558,7 @@ void Cell::directInteractions(int interactingState, std::array<double, 2> intera
         // cancer
         if(interactingState == 6){
             // interactionProperties = {radius, killProb}
-            //cancer_dieFromCD8(interactingX, interactionProperties[0], interactionProperties[1], tstep);
+            cancer_dieFromCD8(interactingX, interactionProperties[0], interactionProperties[1], tstep);
         }
         return;
     } else if (state == 4){

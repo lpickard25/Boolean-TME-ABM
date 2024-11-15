@@ -24,23 +24,34 @@ void Environment::printStep(double time) {
 }
 
 void Environment::updateTimeSeries() {
-    int numT8 = 0;
-    int numT4 = 0;
+    int numT8_activated = 0;
+    int numT8_suppressed = 0;
+    int numT4_reg = 0;
+    int numT4_help = 0;
     int numC = 0;
 
     for(auto &cell : cell_list){
-        if(cell.type == 3){
-            numT8++;
-        } else if(cell.type == 2){
-            numT4++;
-        } else if(cell.type == 0){
+        if(cell.type == 3 && cell.state == 6){
+            numT8_activated++;
+        }else if(cell.type == 3 && cell.state == 7) {
+            numT8_suppressed++;
+        }
+        else if(cell.type == 2 && cell.state == 4) {
+            numT4_help++;
+        }
+        else if(cell.type == 2 && cell.state == 5) {
+            numT4_reg++;
+        }
+        else if(cell.type == 0){
             numC++;
         }
     }
 
     cancerTS.push_back(numC);
-    cd8TS.push_back(numT8);
-    cd4TS.push_back(numT4);
+    cd8TS.push_back(numT8_activated);
+    cd8_suppTS.push_back(numT8_suppressed);
+    cd4TS.push_back(numT4_help);
+    cd4_regTS.push_back(numT4_reg);
 
     int m0 = 0;
     int m1 = 0;

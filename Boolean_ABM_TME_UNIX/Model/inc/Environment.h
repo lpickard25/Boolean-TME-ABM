@@ -29,7 +29,8 @@ public:
     //destructor needed
     bool visualize;
     void simulate(double tstep);
-
+    void simulate(double tstep, std::vector<std::array<double, 3>> clusters);
+    void initialize(std::string size, std::string xloc, std::string yloc);
 private:
     void runCells(double tstep, size_t step_count);
     void neighborInfluenceInteractions(double tstep, size_t step_count);
@@ -41,6 +42,9 @@ private:
     double calculateDiffusibles(std::array<double, 2> x);
 
     void save(double tstep, double tstamp);
+
+    void saveTimeSeries();
+
     void loadParams();
 
     void initializeCells(std::array<double, 2> coords, double clusterRadius, int celltype);
@@ -48,6 +52,8 @@ private:
     void updateTimeSeries();
 
     void printStep(double time);
+
+    void createSet(std::vector<std::array<double, 3>> clusters, std::string folder, int Runs);
     
     double dt;
 
@@ -57,7 +63,9 @@ private:
     // time courses
     std::vector<int> cancerTS;
     std::vector<int> cd8TS;
+    std::vector<int> cd8_suppTS;
     std::vector<int> cd4TS;
+    std::vector<int> cd4_regTS;
     std::vector<int> m0TS;
     std::vector<int> m1TS;
     std::vector<int> m2TS;

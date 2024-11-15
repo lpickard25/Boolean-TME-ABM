@@ -19,7 +19,6 @@ void Environment::initializeCells(std::array<double,2> coords, double clusterRad
             for(int j=0; j<nCells; ++j){
                 double x = (i * cellParams[4][0] * cos(2 * 3.1415 * j / nCells))+coords[0];
                 double y = (i * cellParams[4][0] * sin(2 * 3.1415 * j / nCells))+coords[1];
-
                 cell_list.push_back(Cell({x,y}, cell_list.size(), cellParams, 3, trajec_phenotype,0));
             }
         }

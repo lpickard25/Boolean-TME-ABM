@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "Environment.h"
 #include "ModelUtil.h"
 #include <GLFW/glfw3.h>
@@ -97,7 +99,7 @@ Environment::Environment(std::string folder, std::string set, std::string tCellT
 
 
     // attempt to load in t cell trajectory files by iterating over files in tCellTrajectoryPath
-    printf("Attempting to read trajectories located in %s...\n", tCellTrajectoryPath.c_str()); 
+    //printf("Attempting to read trajectories located in %s...\n", tCellTrajectoryPath.c_str());
 
     
     for (const auto& entry : std::filesystem::directory_iterator(tCellTrajectoryPath)){
@@ -115,7 +117,7 @@ Environment::Environment(std::string folder, std::string set, std::string tCellT
         }
     }
 
-    printf("Finished reading trajectories located in %s...\n", tCellTrajectoryPath.c_str()); 
+    //printf("Finished reading trajectories located in %s...\n", tCellTrajectoryPath.c_str());
     
     //attempt to load in t cell trajectory file 
     std::string trajecPath =  "t_cell_trajectory/1Tcell_Sim_ABM.csv"; 
@@ -129,7 +131,47 @@ Environment::Environment(std::string folder, std::string set, std::string tCellT
     std::vector<std::string> phenotype_trajec_1; 
     tCellPhenotypeTrajectory_1 = phenotype_trajec_1; 
     
-    std::cout << "Constructor done" << std::endl; 
+    //std::cout << "Constructor done" << std::endl;
+}
+
+void Environment::initialize(std::string numClusters, std::string sizeClusters, std::string distance) {
+    if (numClusters == "1") {
+        double radius = stod(sizeClusters);
+        //std::cout << "radius: " << radius << std::endl;
+        initializeCells({0.0,0.0},radius,0);
+    }
+    else if (numClusters == "2") {
+        char *clusterSize = strdup(sizeClusters.c_str());
+        char *r1 = strtok(clusterSize, ".");
+        char *r2 = strtok(NULL, ".");
+        double radius1 = atof(r1);
+        double radius2 = atof(r2);
+        //std::cout << sizeClusters  << std::endl;
+        std::array<double,2> center1 = {stod(distance)/-2,0};
+        std::array<double,2> center2 = {stod(distance)/2,0};
+        //std::cout << "radii: " << radius1 << ", " << radius2 << std::endl;
+        //std::cout << "xlocs: " << center1[0] << ", " << center2[0] << std::endl;
+        initializeCells(center1, radius1, 0);
+        initializeCells(center2, radius2, 0);
+    }
+    else if (numClusters == "3") {
+        char *clusterSize = strdup(sizeClusters.c_str());
+        char *r1 = strtok(clusterSize, ".");
+        char *r2 = strtok(NULL, ".");
+        char *r3 = strtok(NULL, ".");
+        double radius1 = atof(r1);
+        double radius2 = atof(r2);
+        double radius3 = atof(r3);
+        std::array<double,2> center1 = {stod(distance)/-2,stod(distance)*sqrt(3)/4};
+        std::array<double,2> center2 = {stod(distance)/2,stod(distance)*sqrt(3)/4};
+        std::array<double,2> center3 = {0,stod(distance)*sqrt(3)/-4};
+        initializeCells(center1, radius1, 0);
+        initializeCells(center2, radius2, 0);
+        initializeCells(center3, radius3, 0);
+    }
+    else {
+        initializeCells({0.0,0.0},5 , 0);
+    }
 }
 
 void Environment::simulate(double tstep) {
@@ -145,14 +187,14 @@ void Environment::simulate(double tstep) {
 
     // included for visualization
     int model_time = 0;
-    int saveInterval = 1;
-    int scale = 4;
-    int winWidth = 4000/scale;
-    int winHeight = 4000/scale;
-    GLFWwindow* win = createWindow(winWidth, winHeight, "ABM", true);
+    int saveInterval = 24;
+    int scale = 2;
+    int winWidth = 2000/scale;
+    int winHeight = 2000/scale;
+    //GLFWwindow* win = createWindow(winWidth, winHeight, "ABM", true);
 
     // og code
-    std::cout << "initializeCells begun " << std::endl;
+
 
 
     // // initalize Cells for visualization of immune migration
@@ -166,32 +208,25 @@ void Environment::simulate(double tstep) {
     //     initializeCells({i,i},1,3);
     // }
 
-    // initialize 2 cancer clusters
-    //initializeCells({400,500}, 5, 0);
-    // initializeCells({-500,-600},4, 0);
-    initializeCells({0,0}, 7, 0);
 
     // more code for visualization
-    int dayNum = steps * tstep / 48;
-    std::string filepath = saveDir +"\\images\\tumorInitialization.jpg";
-    drawModel(visualize, win, scale);
-    const char* cstr = filepath.c_str();
-    saveToJPG(cstr, win);
-
-    // back to og code
-    std::cout << "initializeCells done " << std::endl; 
+    // int dayNum = steps * tstep / 48;
+    // std::string filepath = saveDir +"\\images\\tumorInitialization.jpg";
+    // drawModel(visualize, win, scale);
+    // const char* cstr = filepath.c_str();
+    // saveToJPG(cstr, win);
 
     tumorSize(steps);
-    std::cout << "Initial Tumor Center: ";
-    for (int i = 0; i <2; i++) {
-        std::cout << tumorCenter[i]<<",";
-    }
-    std::cout << "; Tumor Radius: "<<tumorRadius << " necrotic radius: " << necroticRadius<<std::endl;
+    //std::cout << "Initial Tumor Center: ";
+    // for (int i = 0; i <2; i++) {
+    //     std::cout << tumorCenter[i]<<",";
+    // }
+    //std::cout << "; Tumor Radius: "<<tumorRadius << " necrotic radius: " << necroticRadius<<std::endl;
     save(tstep, steps*tstep);
 
     updateTimeSeries();
 
-    std::cout << "starting simulations...\n";
+    //std::cout << "starting simulations...\n";
 
     while(tstep*steps/24 < simulationDuration) {
         recruitImmuneCells(tstep, tstep*steps);
@@ -200,34 +235,36 @@ void Environment::simulate(double tstep) {
         necrosis(tstep);
 
         steps += 1;
-        printStep(steps * tstep);
+        //printStep(steps * tstep);
         updateTimeSeries();
         model_time = steps;
-        if (fmod(steps * tstep, saveInterval) == 0) {
-
-            // creat openGl window
-            drawModel(visualize, win, scale);
-            int dayNum = steps * tstep / saveInterval;
-            std::string filepath = saveDir + "\\images\\tumor_day_"+std::to_string(dayNum)+".jpg";
-            // convert std::string to const char*
-            const char* cstr = filepath.c_str();
-            saveToJPG(cstr, win);
-
-        }
+        // if (fmod(steps * tstep, saveInterval) == 0) {
+        //
+        //     // creat openGl window
+        //     drawModel(visualize, win, scale);
+        //     int dayNum = steps * tstep / saveInterval;
+        //     std::string filepath = saveDir + "\\images\\tumor_day_"+std::to_string(dayNum)+".jpg";
+        //     // convert std::string to const char*
+        //     const char* cstr = filepath.c_str();
+        //     saveToJPG(cstr, win);
+        //
+        // }
         if (fmod(steps * tstep, 24) == 0) {
             // save every simulation day
             save(tstep, steps*tstep);
         }
 
-        int numC = 0;
-        for (auto &c: cell_list) {
-            if (c.type == 0) {
-                numC++;
-            }
-        }
+        // int numC = 0;
+        // for (auto &c: cell_list) {
+        //     if (c.type == 0) {
+        //         numC++;
+        //     }
+        // }
         // if (numC == 0) {
         //     save(tstep, steps*tstep);
         //     break;
         //}
     }
+    saveTimeSeries();
 }
+

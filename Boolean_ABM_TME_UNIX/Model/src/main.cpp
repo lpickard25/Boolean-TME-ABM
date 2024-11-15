@@ -72,36 +72,43 @@
  */
 
 int main(int argc, char **argv) {
+ //std::cout << "argument 0: " << argv[0] << std::endl;
     std::string folder = argv[1];
     std::string set = argv[2];
-    std::string pST = argv[3]; 
-    std::string dp_fac = argv[4]; 
+    std::string pST = argv[3];
+    std::string dp_fac = argv[4];
     std::string kp_fac = argv[5];
+    std::string numClusters = argv[6];
+    std::string sizeClusters = argv[7];
+    std::string distance = argv[8];
 
-    std::cout << std::filesystem::current_path() << std::endl;
-    std::string str = "del /f/q/s .\\"+folder+"\\set_" + set;
-    const char *command = str.c_str();
-    std::system(command);
+    //std::cout << std::filesystem::current_path() << std::endl;
+    // std::string str = "del /f/q/s .\\"+folder+"\\set_" + set;
+    // const char *command = str.c_str();
+    // std::system(command);
 
-    str = "rd /s/q .\\"+folder+"\\set_" +set;
-    command = str.c_str();
-    std::system(command);
+    // str = "rd /s/q .\\"+folder+"\\set_" +set;
+    // command = str.c_str();
+    // std::system(command);
 
-    str = "mkdir .\\"+folder+"\\set_"+set+"\\images";
-    command = str.c_str();
-    std::system(command);
+    // str = "mkdir .\\"+folder+"\\set_"+set+"\\images";
+    // command = str.c_str();
+    // std::system(command);
 
     // str = "python genParams.py ./"+folder+"/set_"+set+" "+pST+" "+dp_fac+" "+kp_fac;
-    str = "python genParams.py "+folder+" "+set + " "+ pST + " " + dp_fac + " " + kp_fac;
-    command = str.c_str();
+    std::string str = "python genParams.py "+folder+" "+set + " "+ pST + " " + dp_fac + " " + kp_fac;
+    const char* command = str.c_str();
     std::system(command);
 
     double start = omp_get_wtime();
     Environment model(folder, set, "Model\\phenotype_out\\"); //can replace with a directory representing any other phenotype state
-    model.visualize = true;
+    model.visualize = false;
+    //std::cout << "initializeCells begun " << std::endl;
+    model.initialize(numClusters, sizeClusters, distance);
+    //std::cout << "initializeCells finish " << std::endl;
     model.simulate(1);
     double stop = omp_get_wtime();
-    std::cout << "Duration: " << (stop-start)/(60*60) << std::endl;
+    //std::cout << "Duration: " << (stop-start)/(60*60) << std::endl;
 
     return 0;
 }
