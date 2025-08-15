@@ -1,4 +1,5 @@
 #include "Cell.h"
+#include "Environment.h"
 
 void Cell::initializeCancerCell(std::vector<std::vector<double>> &cellParams, size_t init_tstamp) {
     state = 3;
@@ -30,6 +31,8 @@ void Cell::cancer_dieFromCD8(std::array<double, 2> otherX, double otherRadius, d
         std::uniform_real_distribution<double> dis(0.0,1.0); 
         if(dis(mt) < kp){
             state = -1;
+            //std::cout << id << ": Cancer cell died" << std::endl;
+            Environment::killCount += 1;
         }
     }
 }

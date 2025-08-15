@@ -72,43 +72,40 @@
  */
 
 int main(int argc, char **argv) {
- //std::cout << "argument 0: " << argv[0] << std::endl;
-    std::string folder = argv[1];
-    std::string set = argv[2];
-    std::string pST = argv[3];
-    std::string dp_fac = argv[4];
-    std::string kp_fac = argv[5];
-    std::string numClusters = argv[6];
-    std::string sizeClusters = argv[7];
-    std::string distance = argv[8];
+    /*
+     * takes all the program arguments, runs the genParams.py, creates the environment object
+     * initializes, begins and times the simulation
+     */
+    //std::cout << "argument 0: " << argv[0] << std::endl;
+    std::string folder = argv[1];  //string: SimulationSet
+    std::string set = argv[2];     //int: 1
+    std::string pST = argv[3];     //int: 1
+    std::string dp_fac = argv[4];  //float: 1
+    std::string kp_fac = argv[5];  //float: 1
+    std::string numClusters = argv[6];  //int:2 (stod() is used on it)
+    std::string sizeClusters = argv[7]; //char: 3.7 (means one cluster is 3 and the other is 7 cell in radius
+    std::string distance = argv[8];    //int: 1000 (stod() is used on it)
+    std::string rec_rate_fac = argv[9]; //float: 1
+    std::string mig_fac = argv[10];  //float: 5
+    std::string mig_cells = argv[11];  //int: either 3 for all immune cells or 1 for cd8 t cells only (stod())
 
-    //std::cout << std::filesystem::current_path() << std::endl;
-    // std::string str = "del /f/q/s .\\"+folder+"\\set_" + set;
-    // const char *command = str.c_str();
-    // std::system(command);
-
-    // str = "rd /s/q .\\"+folder+"\\set_" +set;
-    // command = str.c_str();
-    // std::system(command);
-
-    // str = "mkdir .\\"+folder+"\\set_"+set+"\\images";
-    // command = str.c_str();
-    // std::system(command);
-
-    // str = "python genParams.py ./"+folder+"/set_"+set+" "+pST+" "+dp_fac+" "+kp_fac;
-    std::string str = "python genParams.py "+folder+" "+set + " "+ pST + " " + dp_fac + " " + kp_fac;
+    std::string str = "python genParams.py "+folder+" "+set + " "+ pST + " " + dp_fac + " " + kp_fac
+      + " " + rec_rate_fac + " " + mig_fac;
     const char* command = str.c_str();
     std::system(command);
 
-    double start = omp_get_wtime();
+    std::cout << "params done" << std::endl;
+
+
     Environment model(folder, set, "Model\\phenotype_out\\"); //can replace with a directory representing any other phenotype state
-    model.visualize = false;
-    //std::cout << "initializeCells begun " << std::endl;
+    model.visualize = true;
+    std::cout << "initialize begun " << std::endl;
     model.initialize(numClusters, sizeClusters, distance);
-    //std::cout << "initializeCells finish " << std::endl;
-    model.simulate(1);
+    std::cout << "initialize finish " << std::endl;
+    double start = omp_get_wtime();
+    model.simulate(1, mig_cells);
     double stop = omp_get_wtime();
-    //std::cout << "Duration: " << (stop-start)/(60*60) << std::endl;
+    std::cout << "Duration: " << (stop-start)/(60*60) << std::endl;
 
     return 0;
 }

@@ -43,6 +43,7 @@ void Environment::save(double tstep, double tstamp) {
 
     std::ofstream myfile;
     std::string day_dir = saveDir + "\\cellLists";
+
     // std::string str = "mkdir " + day_dir;
     // const char *command = str.c_str();
     // //std::cout<<command<<std::endl;
@@ -53,6 +54,7 @@ void Environment::save(double tstep, double tstamp) {
     // myfile.close();
 
     myfile.open(day_dir+"/cells_day_"+std::to_string(day)+".csv");
+    myfile << "cell_type,xloc,yloc,radius,phenotype,pdl1" << std::endl;
     for(auto &cell : cell_list){
         //logging cell location, type and state 
         if(cell.type == 3){ //cd8 t cell
@@ -95,9 +97,18 @@ void Environment::save(double tstep, double tstamp) {
                << cell.pdl1 << std::endl;
         }
     }
+    for (auto &vessel : vessel_list) {
+        myfile << -2 << ","
+               << vessel.x[0] << ","
+               << vessel.x[1] << ","
+               << vessel.radius << ","
+               << vessel.vesselState << ","
+               << 0 << std::endl;
+    }
     myfile.close();
     day++;
 
+    // old code that saved individual csvs for each cell type
     /*myfile.open(day_dir+"/cancerCells.csv");
     for(auto &cell : cell_list){
         if(cell.type == 0) {
@@ -238,12 +249,15 @@ void Environment::save(double tstep, double tstamp) {
 }
 
 void Environment::saveTimeSeries() {
+    // compiles the lists generated during the simulation into a single csv
+    // see environmentInfo.cpp
     std::ofstream myfile;
     myfile.open(saveDir+"/TimeSeries.csv");
-    myfile << "time_step,cancer,cd8_activate,cd8_suppressed,cd4_helper,cd4_regulatory,m0,m1,m2,radius" << std::endl;
+    myfile << "time_step,cancer,cd8_activate,cd8_suppressed,cd4_helper,cd4_regulatory,m0,m1,m2,radius,killCount" << std::endl;
     for (int i=0; cancerTS.size() > i; ++i) {
         myfile << i << "," << cancerTS[i] << "," << cd8TS[i] << "," << cd8_suppTS[i] << "," << cd4TS[i] << ","
-         << cd4_regTS[i] << "," << m0TS[i] << "," << m1TS[i] << "," << m2TS[i] << "," << radiusTS[i] << std::endl;
+         << cd4_regTS[i] << "," << m0TS[i] << "," << m1TS[i] << "," << m2TS[i] << "," << radiusTS[i] <<
+             "," << killCountTS[i] << std::endl;
     }
     myfile.close();
 

@@ -9,7 +9,11 @@ include_directories(${CMAKE_SOURCE_DIR}/inc/stb_master)
 file(GLOB SOURCES "Model/src/*.cpp")
 
 add_executable(runModel ${SOURCES}
-        Model/src/modelVisualization.cpp)
+        Model/src/modelVisualization.cpp
+        Model/inc/Vessel.h
+        Model/inc/Vessel.h
+        Model/src/Vessel_General.cpp
+        Model/src/Vessel_General.cpp)
 
 find_package(glfw3 3.4 REQUIRED)
 find_package(OpenGL REQUIRED)

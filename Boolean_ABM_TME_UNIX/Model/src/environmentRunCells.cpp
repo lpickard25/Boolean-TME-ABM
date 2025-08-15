@@ -19,9 +19,14 @@ void Environment::neighborInfluenceInteractions(double tstep, size_t step_count)
 #pragma omp parallel for
     for(int i=0; i<cell_list.size(); ++i){
         // reset neighborhood and influence
+        if(std::isnan(cell_list[i].x[0]) || std::isnan(cell_list[i].x[1])) {
+            std::cerr << "error in neighborhoodInfInt: " <<cell_list[i].type << cell_list[i].x[0] << cell_list[i].x[1] << std::endl;
+            exit(-1);
+        }
         cell_list[i].neighbors.clear();
-        cell_list[i].distantCancerNeighbors.clear();
-        cell_list[i].closeCancerNeighbors.clear();
+        //reset cancer distance and presence of neighbors
+        cell_list[i].cancerDistance = 100;
+        cell_list[i].cancerNeighbor = false;
         cell_list[i].clearInfluence();
 
         for(auto &c : cell_list){
@@ -55,12 +60,6 @@ void Environment::neighborInfluenceInteractions(double tstep, size_t step_count)
 
 }
 
-// std::array <double, 2> Environment::closestCancer(std::vector<int> candidates) {
-//     for (auto &c : candidates) {
-//         if (cell_list[c].state == 3) {
-//             int closestID = std::min()
-//     }
-// }
 
 void Environment::calculateForces(double tstep) {
     /*
@@ -83,9 +82,13 @@ void Environment::calculateForces(double tstep) {
         // calc forces
 #pragma omp parallel for
         for(int i=0; i<cell_list.size(); ++i){
+            //std::cout << "cell: " << i << std::endl;
 
-            for(auto &c : cell_list[i].neighbors){
-                cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type);
+            for(auto &c : cell_list[i].neighbors) {
+                //std::cout << "neighbor: " << c << std::endl;
+                //if (cell_list[i].type != 0 and cell_list[c].type != 0){
+                    cell_list[i].calculateForces(cell_list[c].x, cell_list[c].radius, cell_list[c].type, cell_list[c].id);
+                //}
             }
         }
 
@@ -93,7 +96,7 @@ void Environment::calculateForces(double tstep) {
         for(int i=0; i<cell_list.size(); ++i){
             cell_list[i].resolveForces(dt, tumorCenter, necroticRadius, necroticForce);
         }
-     }
+    }
 
         // calculate overlaps and proliferation states
 #pragma omp parallel for
@@ -102,8 +105,8 @@ void Environment::calculateForces(double tstep) {
                 cell_list[i].calculateOverlap(cell_list[c].x, cell_list[c].radius);
             }
             cell_list[i].isCompressed();
-        }
 
+        }
     }
 
 void Environment::internalCellFunctions(double tstep, size_t step_count) {
@@ -112,9 +115,11 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
      * cell proliferation
      * remove cell if out of bounds
      */
-    int numCells = cell_list.size();
+    const int numCells = cell_list.size();
     for(int i=0; i<numCells; ++i){
-        cell_list[i].age(tstep, step_count);
+        //if (cell_list[i].type != 0) {
+            cell_list[i].age(tstep, step_count);
+        //}
         // if in necrotic core, die
         if(cell_list[i].calcDistance(tumorCenter) < necroticRadius){
             cell_list[i].state = -1;
@@ -125,6 +130,10 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
         std::array<double, 3> newLoc = cell_list[i].proliferate(tstep);
 
         if(newLoc[2] == 1){
+            if(std::isnan(newLoc[0]) || std::isnan(newLoc[1])) {
+                std::cerr << cell_list[i].type << " in internal cell function" << newLoc[0] << newLoc[1] << std::endl;
+                exit(-1);
+            }
             if(cell_list[i].type == 3){
                 int phenotypeIdx = getRandomNumber(tCellPhenotypeTrajectory.size());
                 std::vector<std::string> trajec_phenotype = get2dvecrow(tCellPhenotypeTrajectory, phenotypeIdx);
@@ -137,10 +146,6 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
                                      cell_list[i].type, trajec_phenotype, step_count));
             }
             else{
-                if(std::isnan(newLoc[0]) || std::isnan(newLoc[1])) {
-                    std::cerr << cell_list[i].type << " in internal cell function" << newLoc[0] << newLoc[1] << std::endl;
-                    exit(-1);
-                }
                 cell_list.push_back(Cell({newLoc[0], newLoc[1]},
                                      cell_list.size(),
                                      cellParams,
@@ -171,6 +176,54 @@ void Environment::internalCellFunctions(double tstep, size_t step_count) {
     }
 }
 
+void Environment::runVessels(size_t step_count) {
+    /*
+     * iterates over each vessel and determines its protumor neighbors, vessel neighbors,
+     * and closest cancer neighbor (CCN)
+     * determined whether vessel allows extravasation based on these
+     */
+
+#pragma omp parallel for
+    for(int i=0; i<vessel_list.size(); ++i) {
+        vessel_list[i].protumorneighbors.clear();
+        vessel_list[i].vesselneighbors.clear();
+        vessel_list[i].CCNdistance = 100;
+        for(auto &c : cell_list) {
+            if (c.state == 3) {
+                vessel_list[i].neighboringCells(c.x, c.state);
+            }
+        }
+        vessel_list[i].setExtravasationBool(step_count);
+        for(auto &v : vessel_list) {
+            if (vessel_list[i].id != v.id) {
+                vessel_list[i].neighboringVessels(v.x);
+            }
+        }
+        //std::cout << "Vessel neighbors: " << size(vessel_list[i].vesselneighbors) << std::endl;
+    }
+}
+
+void Environment::runSprout(size_t step_count) {
+    /*
+     * function only runs if angiogensis is true
+     * iterates over vessels and determines if/where it sprouts
+     * potential for parallelization here
+     */
+    std::vector<std::array<double, 3>> newVessels(size(vessel_list));
+    for(int i=0; i<vessel_list.size(); ++i) {
+        std::array<double, 3> newVessel = vessel_list[i].sprout();
+        newVessels[i] = newVessel;
+    }
+
+    for(auto &v :newVessels) {
+        if (v[2] == 1) {
+            vessel_list.push_back(Vessel({v[0],v[1]}, vessel_list.size(), false));
+        }
+    }
+}
+
+
+
 void Environment::runCells(double tstep, size_t step_count) {
     neighborInfluenceInteractions(tstep, step_count);
 
@@ -178,5 +231,10 @@ void Environment::runCells(double tstep, size_t step_count) {
 
     internalCellFunctions(tstep, step_count);
 
+    runVessels(step_count);
+
+    if (angiogenesis) {
+        runSprout(step_count);
+    }
 
 }

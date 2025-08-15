@@ -17,25 +17,31 @@ sim = int(sys.argv[2])
 # mcParams = np.loadtxt(fld+'/params.csv', delimiter=',')
 # params = mcParams[sim, :]
 pST = int(sys.argv[3]) #phenotype state transition
-dp = float(sys.argv[4])
-kp = float(sys.argv[5])
+dp = float(sys.argv[4]) #death probability factor (higher prob factor = higher chance of dying)
+kp = float(sys.argv[5]) #killing probability factor
+rec_fac = float(sys.argv[6])
+mig_bias = float(sys.argv[7])
 
 # print("starting simulation with phenotype state transition: {}, death probability factor: {}, kill probability factor: {}".format(pST, dp, kp) )
 
 cancerPDL1_m = 0.01 
-tcellMigBias = 0.076
+tcellMigBias = 0.076*mig_bias
 cd4Diff = 0.132
 cd4PDL1 = 0.139
-macMigBias = 0.123
+macMigBias = 0.123  # should be 0.123
 macM1 = 0.187
 macM2 = 0.433
 macPDL1 = 0.264 
-cd8RecRate = 0.001 #0.0001
+cd8RecRate = 0.001*rec_fac #should be 0.001 #0.0001
 cd4RecRate = 0.001
-macRecRate = 0.006
-recDelay = 2.85
+macRecRate = 0.006 # should be 0.006
+recDelay = 2.85  # should be 2.85
 necroticGrowth = 0 #envparams[2]
 necrosisLimit = 940.3
+
+macMigBias_inTumor = 0.067
+cd4_tCellMigBias_inTumor = 0.068
+cd8_tCellMigBias_inTumor = 0.022
 
 macMigSpeed_inTumor = 53.2
 cd4_tCellMigSpeed_inTumor = 240.8
@@ -45,7 +51,7 @@ cd8_tCellMigSpeed_inTumor = 204
 # ------------------------- #
 #############################
 
-cellParams = np.zeros((14, 4))
+cellParams = np.zeros((15, 4))
 
 
 # cancer params
@@ -72,7 +78,8 @@ cellParams[7, 1] = cd4Diff  # differentiation to Treg
 cellParams[8, 1] = 100.0  # influence distance
 cellParams[9, 1] = tcellMigBias  # migration bias base
 cellParams[10, 1] = cd4PDL1  # pdl1 (when Treg)
-cellParams[11, 1] = cd4_tCellMigSpeed_inTumor
+cellParams[11, 1] = cd4_tCellMigBias_inTumor
+cellParams[12, 1] = cd4_tCellMigSpeed_inTumor
 
 
 # cd8 params
@@ -81,7 +88,7 @@ cellParams[1, 2] = k  # kc
 cellParams[2, 2] = d  # damping
 cellParams[3, 2] = ol  # overlap
 cellParams[4, 2] = 10.0  # diameter (um)
-cellParams[5, 2] = 1/(24.0*3.0*dp) # lifespan (days) Gong 2017
+cellParams[5, 2] = dp*(1/(24.0*3.0)) # death prob* #lifespan (days) Gong 2017
 cellParams[6, 2] = 360.0  # migration speed um/hr | https://onlinelibrary.wiley.com/doi/epdf/10.1038/icb.2012.75 -> scaled based on model scale
 cellParams[7, 2] = 0.1*kp # killProb Gong 2017 (other works use very different probabilities
 cellParams[8, 2] = 2.0  # infScale -> arbitrarily set
@@ -96,7 +103,8 @@ as articulated by the embedded Gene Regulatory Network. A higher value results i
 This value must be an integer. A recommended range is 1-10 but should not exceed the length of the smallest trajectory
 """
 cellParams[12, 2] = pST
-cellParams[13, 2] = cd8_tCellMigSpeed_inTumor
+cellParams[13, 2]= cd8_tCellMigBias_inTumor
+cellParams[14, 2] = cd8_tCellMigSpeed_inTumor
 
 
 # macrophage params
@@ -112,20 +120,21 @@ cellParams[8, 3] = macM2  # kM2
 cellParams[9, 3] = 100.0  # influence distance
 cellParams[10, 3] = macMigBias  # migration bias
 cellParams[11, 3] = macPDL1  # pdl1
-cellParams[12, 3] = macMigSpeed_inTumor
+cellParams[12, 3] = macMigBias_inTumor
+cellParams[13, 3] = macMigSpeed_inTumor
 
 
 recParams = np.zeros((5, 1))
 recParams[0] = cd8RecRate # cd8RecRate
 recParams[1] = macRecRate # mRecRate
 recParams[2] = cd4RecRate # cd4RecRate
-recParams[3] = 100.0  # recDist (50.0 recruit a uniform distribution recDist away from the tumor edge
+recParams[3] = 500.0  # recDist (50.0 recruit a uniform distribution recDist away from the tumor edge
 #recParams[3] = 0.25 # max recruitment cytokine conc
 recParams[4] = recDelay # recruitment delay (days)
 
 envParams = np.zeros((5, 1))
 envParams[0] = 5.0  # initTumorSize x | circle radius
-envParams[1] = 5.0 # simulation duration (days)
+envParams[1] = 24.0 # simulation duration (days)
 envParams[2] = necroticGrowth # necrotic growth
 envParams[3] = 0.5 # necrotic region outward force
 envParams[4] = necrosisLimit # necrosis limit (accounts for diffusion limit of oxygen, but is adjustable based on the scale of the simulation)
@@ -133,10 +142,12 @@ envParams[4] = necrosisLimit # necrosis limit (accounts for diffusion limit of o
 # os.system('mkdir -p ' + sys.argv[1] + '/params')
 saveFld1 = sys.argv[1]+'/set_'+sys.argv[2]+'/params'
 saveFld2 = sys.argv[1]+'/set_'+sys.argv[2]+'/cellLists'
+saveFld3 = sys.argv[1]+'/set_'+sys.argv[2]+'/images'
 os.makedirs(saveFld1)
 os.makedirs(saveFld2)
+os.makedirs(saveFld3)
 np.savetxt(saveFld1+'/cellParams.csv', cellParams, delimiter=',')
 np.savetxt(saveFld1+'/recParams.csv', recParams, delimiter=',')
 np.savetxt(saveFld1+'/envParams.csv', envParams, delimiter=',')
 
-# print('------Parameters Grid Done-----\n')
+print('------Parameters Grid Done-----\n')

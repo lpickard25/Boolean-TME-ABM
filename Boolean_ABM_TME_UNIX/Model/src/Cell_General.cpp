@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "Cell.h"
 
 /*
@@ -69,7 +71,8 @@ Cell::Cell(std::array<double, 2> loc, int idx, std::vector<std::vector<double>> 
     killProb = 0;
     baseKillProb = 0;
     infScale = 0;
-
+    cancerDistance = 100;
+    cancerNeighbor = false;
     state = 0;
 
     // for influence distance, assume a soft-cutoff where p(distance) = probTh
@@ -104,25 +107,38 @@ std::array<double, 2> Cell::attractiveForce(std::array<double, 2> dx, double oth
 
 std::array<double, 2> Cell::repulsiveForce(std::array<double, 2> dx, double otherRadius) {
     double dxNorm = calcNorm(dx);
+    //std::cout << "dxNorm: " << dxNorm << std::endl;
     std::array<double, 2> dxUnit = {dx[0]/dxNorm, dx[1]/dxNorm};
+    //std::cout << "dxUnit" << dxUnit[0] << dxUnit[1] << std::endl;
     double sij = radius + otherRadius;
+    //std::cout << "sij: " << sij << ", mu: " << mu << std::endl;
     double scaleFactor = mu*sij*log10(1 + (dxNorm - sij)/sij);
+    //std::cout << "scaleFactor: " << scaleFactor << std::endl;
     double F0 = dxUnit[0]*scaleFactor;
     double F1 = dxUnit[1]*scaleFactor;
+    //std::cout << "F: " << F0 << ", " << F1 << std::endl;
 
     return {F0, F1};
 }
 
-void Cell::calculateForces(std::array<double, 2> otherX, double otherRadius, int &otherType) {
+void Cell::calculateForces(std::array<double, 2> otherX, double otherRadius, int &otherType, int &otherID) {
     /*
      * assume attractive force only between cancer cells
      */
 
     double distance = calcDistance(otherX);
+    //std::cout << "distance: " << distance << std::endl;
+    if (distance == 0) {
+        std::cerr << "calculateForces, 0 distance: " << type << ", " << otherType << std::endl;
+        std::cerr << "IDS: " << id << ", " << otherID << std::endl;
+        std::cerr << "Locations: (" << x[0] << ", " << x[1] << "), (" << otherX[0] << ", " << otherX[1] << ")" <<std::endl;
+        exit(-1);
+    }
 
     if(distance < rmax){
         std::array<double, 2> dx = {(otherX[0]-x[0]),
                                     (otherX[1]-x[1])};
+        //std::cout << "dx: " << dx[0] << dx[1] << std::endl;
         if(distance < (radius + otherRadius)){
             std::array<double, 2> force = repulsiveForce(dx, otherRadius);
             currentForces[0] += force[0];
@@ -136,7 +152,7 @@ void Cell::calculateForces(std::array<double, 2> otherX, double otherRadius, int
 }
 
 void Cell::resolveForces(double dt, std::array<double, 2> &tumorCenter, double &necroticRadius, double &necroticForce) {
-
+    //std::cout << "tumorCenter: " << tumorCenter[0] << " " << tumorCenter[1] << std::endl;
     if(calcDistance(tumorCenter)+radius < necroticRadius+radius){
         std::array<double, 2> dx = {x[0] - tumorCenter[0],
                                     x[1] - tumorCenter[1]};
@@ -177,13 +193,16 @@ void Cell::neighboringCells(std::array<double, 2> otherX, int otherID, int other
      * stores the index in cell_list (in Environment) of the neighboring cells
      */
     double dis = calcDistance(otherX);
-    if(dis <= 10*rmax){     //rmax = 1.5*radius*2 (used to be 10*rmax)
+    if(dis <= 2*rmax){     //rmax = 1.5*radius*2 (used to be 10*rmax)
         neighbors.push_back(otherID);
     }
-    else if (dis <= 100 && otherState == 3) {
-        distantCancerNeighbors.push_back(otherX);
+    // iteratively updated cancerDistance to result in the closest cancer cell being the target
+    // cancerDistance gets reset and starts at 100
+    if (dis <= cancerDistance && otherState == 3) {
+        cancerTarget = otherX;
+        cancerDistance = dis;
+        cancerNeighbor = true;
     }
-
 }
 
 // OVERLAP FUNCTIONS
@@ -255,12 +274,12 @@ void Cell::age(double dt, size_t step_count) {
                 if(dis(mt) < deathProb){
                     state = -1;
                 }
-                
+                break;
             case 'M': 
                 if(dis(mt) < (deathProb/2)){
                     state = -1;
                 }
-                
+                break;
             default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate     
                 if(dis(mt) < deathProb){
                     state = -1;
@@ -284,11 +303,12 @@ void Cell::age(double dt, size_t step_count) {
                 if(dis(mt) < deathProb){
                     state = -1;
                 }
+                break;
             case 'M': 
                 if(dis(mt) < deathProb/2){
                     state = -1;
                 }
-                
+                break;
             default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
                 if(dis(mt) < deathProb){
                     state = -1;
@@ -348,70 +368,62 @@ void Cell::age(double dt, size_t step_count) {
 // NEW migrate function
 void Cell::migrate(double dt, std::array<double,2> tumorCenter) {
     /*
-     * biased random-walk towards tumor center
-     *
+     * biased random-walk towards closest Cancer cell (cancerTarget)
+     * cancer neighbor boolean and target are determined in neighborInfluenceInteractions function
+     * - if there are cancer cells that are less than 100 microns away from immune cell, bool is true
      */
     if(type == 0 || state == -1 || state == 7){return;} // cancer cells, dead cells, suppressed CD8
 
 
     std::normal_distribution<double> vect(0.0, 1.0);
     std::array<double, 2> dx_random = {vect(mt), vect(mt)};
+    //std::cout << "Immune Random: "<<dx_random[0]<<", "<<dx_random[1]<< std::endl;
     dx_random = unitVector(dx_random);
 
-    std::array <double,2> target = {0,0};
-
-    if (!distantCancerNeighbors.empty()) {
-        double tempdis = 100.0;
-        for (auto &c : distantCancerNeighbors) {
-            double dis = calcDistance(c);
-            if(dis < tempdis) {
-                target = c;
-                tempdis = dis;
-            }
-        }
-    }
-    else {
+    // if the immune cell does not have a cancer neighbor, migrates in a completely random direction
+    if (!cancerNeighbor) {
         if (influences[3] < 0.75) {
             for(int i=0; i<2; ++i){
                 x[i] += dt*migrationSpeed*dx_random[i];
             }
-        } else {
+        }
+        // if the cell experiences influence from cancer cells greater than 0.75 (max=1)
+        // the cell is considered inside the tumor
+        else {
             for(int i=0; i<2; ++i) {
                 x[i] += dt*migrationSpeed_inTumor*dx_random[i];
             }
         }
-        return;
     }
-
-    std::array<double, 2> dx_direction = {target[0] - x[0],
-                                          target[1] - x[1]};
-
-    dx_direction = unitVector(dx_direction);
-    std::array<double, 2> dx_movement = {0,0};
-
-
-    for(int i=0; i<2; ++i){
-            dx_movement[i] = migrationBias*dx_direction[i] + (1- migrationBias)*dx_random[i];
-    }
-
-    dx_movement = unitVector(dx_movement);
-
-    if (influences[3] < 0.75 ) {
-        for(int i=0; i<x.size(); ++i){
-            x[i] += dt*migrationSpeed*dx_movement[i];
-            if(std::isnan(x[i])){
-                throw std::runtime_error("migration NaN");
-            }
-        }
-    }
+    // perform a biased random walk if the cell has cancer neighbors
+    // where greater migrationBias means more directed movement
     else {
-        for(int i=0; i<x.size(); ++i){
-            x[i] += dt*migrationSpeed_inTumor*dx_movement[i];
-            if(std::isnan(x[i])){
-                throw std::runtime_error("migration NaN");
+        std::array<double, 2> target_direction = {cancerTarget[0] - x[0],
+                                              cancerTarget[1] - x[1]};
+        target_direction = unitVector(target_direction);
+        std::array<double, 2> dx_movement = {0,0};
+        for(int i=0; i<2; ++i){
+            dx_movement[i] = migrationBias*target_direction[i] + (1- migrationBias)*dx_random[i];
+        }
+        dx_movement = unitVector(dx_movement);
+
+        if (influences[3] < 0.75 ) {
+            for(int i=0; i<x.size(); ++i){
+                x[i] += dt*migrationSpeed*dx_movement[i];
+                if(std::isnan(x[i])){
+                    throw std::runtime_error("migration NaN");
+                }
             }
         }
-	}
+        else {
+            for(int i=0; i<x.size(); ++i){
+                x[i] += dt*migrationSpeed_inTumor*dx_movement[i];
+                if(std::isnan(x[i])){
+                    throw std::runtime_error("migration NaN");
+                }
+            }
+        }
+    }
 }
 
 
@@ -427,7 +439,8 @@ void Cell::prolifState() {
     else if(type == 3){
         // CTLs -> presence of Th promotes their proliferation, M2 and Treg decrease it
         // assume CTLs need IL-2 from Th to proliferate
-        canProlif = !(state == 7 || compressed);
+        //canProlif = !(state == 7 || compressed);
+        canProlif = false;
         double posInfluence = influences[4];
         double negInfluence = 1 - (1 - influences[2])*(1 - influences[5]);
 
@@ -614,45 +627,6 @@ std::vector<double> Cell::directInteractionProperties(int interactingState, size
     } else if (state == 6){
         // CD8 active
         if(interactingState == 3){
-            size_t step_alive = step_count -  init_time;
-        
-            if((step_alive*pTypeStateTransition-1) < t_cell_phenotype_Trajectory.size()){
-                
-                std::string phenotype = t_cell_phenotype_Trajectory[step_alive*pTypeStateTransition - 1];
-                char phenotype_char = phenotype[0]; 
-                
-                switch(phenotype_char){
-                case 'N': 
-                    return {radius, killProb};
-                case 'M': 
-                    return {radius, killProb*2};
-                default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
-                    return {radius, killProb/10};
-            }
-            }
-            else{ //we assume the t cell stays at the end of its trajectory until it dies
-
-                // std::string phenotype = t_cell_phenotype_Trajectory.back(); 
-                char phenotype_char; 
-                if (t_cell_phenotype_Trajectory.empty() || (t_cell_phenotype_Trajectory.size() == 0)){
-                    std::cerr << "WARNING directInteractionProperties: t_cell_phenotype_Trajectory is empty!" << std::endl;
-                    //handle any bada alloc error by assuming exhausted state...will debug this, very rare and not fatal 
-                    phenotype_char = 'E'; 
-                }
-                else{
-                    phenotype_char = t_cell_phenotype_Trajectory.back()[0];         
-                }
-            
-                // can set to E
-                switch(phenotype_char){
-                case 'N': 
-                    return {radius, killProb};
-                case 'M': 
-                    return {radius, killProb*2};
-                default: //case 'E' these are cells that are exhausted but haven't been supressed research showing exhausted t cells kill at lower rate
-                    return {radius, killProb/10};
-                }
-            }
             return {radius, killProb};
         }
         
@@ -724,12 +698,13 @@ void Cell::addChemotaxis(std::array<double, 2> otherX, double otherInfluence, in
     }
 }
 
+
 // OTHER FUNCTIONS
 double Cell::calcDistance(std::array<double, 2> otherX) {
     double d0 = (otherX[0] - x[0]);
     double d1 = (otherX[1] - x[1]);
 
-    return sqrt(d0*d0 + d1*d1);
+    return sqrt(d0*d0 + d1*d1); // distance in um
 }
 
 double Cell::calcInfDistance(double dist, double xth) {

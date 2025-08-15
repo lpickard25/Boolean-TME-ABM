@@ -24,6 +24,11 @@ void Environment::printStep(double time) {
 }
 
 void Environment::updateTimeSeries() {
+    /*
+     * function to save time series of number of each state of cell present at every times step
+     * also tracks total number of kills
+     * these lists get saved as a csv after the end of the simulation
+     */
     int numT8_activated = 0;
     int numT8_suppressed = 0;
     int numT4_reg = 0;
@@ -52,6 +57,7 @@ void Environment::updateTimeSeries() {
     cd8_suppTS.push_back(numT8_suppressed);
     cd4TS.push_back(numT4_help);
     cd4_regTS.push_back(numT4_reg);
+    killCountTS.push_back(killCount);
 
     int m0 = 0;
     int m1 = 0;
@@ -69,4 +75,14 @@ void Environment::updateTimeSeries() {
     m2TS.push_back(m2);
 
     radiusTS.push_back(tumorRadius);
+}
+
+int Environment::countCancerCells() {
+    int numC = 0;
+    for(auto &cell : cell_list){
+        if(cell.type == 0){
+            numC++;
+        }
+    }
+    return numC;
 }

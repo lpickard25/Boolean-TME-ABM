@@ -1,4 +1,4 @@
-// Thie code contained herein is used for visualizing the ABM, generating and saving images and gif of the model while it runs.
+// The code contained herein is used for visualizing the ABM, generating and saving images and gif of the model while it runs.
 // Created by Rebecca Bekker on 8/14/24.
 //
 #include "Environment.h"
@@ -9,6 +9,8 @@
 #include <stb_image_write.h>
 #include <cmath>
 #include <vector>
+#define STB_EASY_FONT_IMPLEMENTATION
+#include "stb_easy_font.h"
 
 
 /** This function creates an openGL window, and returns the pointer of that window.
@@ -71,10 +73,10 @@ GLFWwindow* Environment::createWindow(int width, int height, const char* title, 
  * This function calls the createSubLists, drawCircle and drawCircleOutlines functions, amongst others.
  */
 
-void Environment::drawModel(bool active, GLFWwindow* win, int scale) {
+void Environment::drawModel(bool active, GLFWwindow* win, int scale, int killCount) {
         // If visualization is switched on
         if (active) {
-                glClearColor(256,256,256,0); // Set the background color to white.
+                glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // Set the background color to white.
                 glClear(GL_COLOR_BUFFER_BIT);
                 glfwMakeContextCurrent(win);
 
@@ -95,6 +97,13 @@ void Environment::drawModel(bool active, GLFWwindow* win, int scale) {
                                 drawCircle(c.x[0],c.x[1],c.radius,  setColor(i), scale);
                         }
                 }
+                for (const auto& v : vessel_list) {
+                        drawCircle(v.x[0],v.x[1],v.radius, setColor(-2),scale);
+                }
+
+                glColor3f(0.5f, 0.0f, 0.0f);
+                std::string text =  std::to_string(killCount);
+                drawText(text.c_str(), 350, 450, 4.0f);
                 // This updates the drawing. Without this line you won't see any changes on the window.
                 updateWindow(win);
         }
@@ -150,6 +159,9 @@ std::vector<int> Environment::setColor(int cellState) {
 
 
         switch(cellState) {
+                case -2:
+                        return BLACK;
+                        break;
                 case -1: // Dead cells are shaded olive green
                         return OLIVE;
                         break;
@@ -177,6 +189,7 @@ std::vector<int> Environment::setColor(int cellState) {
                 case 7: // Suppressed CD8+ T cells
                         return SAND;
                         break;
+
                 default:
                         return WHITE;
         }
@@ -280,6 +293,22 @@ void Environment::drawCellOutlines(float x, float y, float radius,int scale) {
 }
 
 
+void Environment::drawText(const char* text, float x, float y, float scale = 1.0f) {
+        char buffer[99999];
 
+        // Flip Y coordinate because stb_easy_font treats (0,0) as top-left
 
+        int num_quads = stb_easy_font_print(0, 0, (char*)text, nullptr, buffer, sizeof(buffer));
 
+        // Apply translation and scaling using OpenGL transform
+        glPushMatrix();
+        glTranslatef(x, y, 0.0f);
+        glScalef(scale, -scale, 1.0f);
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(2, GL_FLOAT, 16, buffer);
+        glDrawArrays(GL_QUADS, 0, num_quads * 4);
+        glDisableClientState(GL_VERTEX_ARRAY);
+
+        glPopMatrix();
+}

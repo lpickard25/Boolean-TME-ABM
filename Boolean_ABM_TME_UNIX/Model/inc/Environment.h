@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <random>
 #include "Cell.h"
+#include "Vessel.h"
 #include <iostream>
 #include <iomanip>      
 #include <fstream>
@@ -28,14 +29,23 @@ public:
     Environment(std::string folder, std::string set, std::string tCellTrajectoryPath);
     //destructor needed
     bool visualize;
-    void simulate(double tstep);
+    int steps;
+
+    void simulate(double tstep, std::string mig_cells);
     void simulate(double tstep, std::vector<std::array<double, 3>> clusters);
     void initialize(std::string size, std::string xloc, std::string yloc);
+    int countCancerCells();
+    static int killCount;
+
+    bool angiogenesis;
+    std::vector<std::array<double, 2>> vessels;
+
 private:
     void runCells(double tstep, size_t step_count);
     void neighborInfluenceInteractions(double tstep, size_t step_count);
     void internalCellFunctions(double tstep, size_t step_count);
-    void recruitImmuneCells(double tstep, size_t step_count);
+    void recruitImmuneCells(double tstep, size_t step_count, std::string mig_cells);
+
     std::array<double, 2> recruitmentLocation();
     void tumorSize(int i);
     void necrosis(double tstep);
@@ -48,7 +58,17 @@ private:
     void loadParams();
 
     void initializeCells(std::array<double, 2> coords, double clusterRadius, int celltype);
+
+    std::array<double, 2> makeVesselLoc(int xDist, int yDist);
+    void initializeVessels(int xDist, int yDist);
+    void checkAngiogenesis();
+    void runVessels(size_t step_count);
+    void runSprout(size_t step_count);
+
+    void doangiogenesis(int xDist, int yDist);
+
     void calculateForces(double tstep);
+
     void updateTimeSeries();
 
     void printStep(double time);
@@ -59,6 +79,7 @@ private:
 
     // cell lists
     std::vector<Cell> cell_list;
+    std::vector<Vessel> vessel_list;
 
     // time courses
     std::vector<int> cancerTS;
@@ -70,6 +91,8 @@ private:
     std::vector<int> m1TS;
     std::vector<int> m2TS;
     std::vector<int> radiusTS;
+    std::vector<int> killCountTS;
+
 
     /*
     t cell trajectory matrix: we can either represent as a vector of chars 
@@ -88,7 +111,7 @@ private:
     std::vector<double> envParams;
 
     std::string saveDir;
-    int steps;
+
     std::vector<double> immuneCellRecRates;
     std::vector<int> immuneCellRecTypes;
     std::vector<double> immuneCells2rec;
@@ -100,17 +123,22 @@ private:
     double necroticForce;
     double necroticLimit;
     std::array<double, 2> tumorCenter;
+    double absMaxX;
+    double absMaxY;
     double recruitmentDelay;
 
     // environment params
     double simulationDuration;
     int day;
+    double xdist;
+    double ydist;
+
 
     std::mt19937 mt;
 
     // simulation params
     GLFWwindow* createWindow(int width, int height, const char* title, bool active);
-    void drawModel(bool active, GLFWwindow* win, int scale);
+    void drawModel(bool active, GLFWwindow* win, int scale, int killCount);
     void updateWindow(GLFWwindow* win);
     std::vector<int> setColor(int cellType, int cellState);
     std::vector<int> setColor(int cellState);
@@ -118,6 +146,7 @@ private:
     void drawCellOutlines(float x, float y, float radius,int scale);
     void saveToJPG(const char* filepath, GLFWwindow* win);
     std::array<std::vector<Cell>,8> createSubLists();
+    void drawText(const char* text, float x, float y,float scale);
 
 };
 

@@ -11,13 +11,14 @@ void Cell::initializeCD8Cell(std::vector<std::vector<double> > &cellParams, std:
     radius = cellParams[4][2]/2.0;
     deathProb = cellParams[5][2];
     migrationSpeed = cellParams[6][2];
-    killProb = cellParams[7][2];
+    baseKillProb = cellParams[7][2];
     infScale = cellParams[8][2];
     influenceRadius = cellParams[9][2];
     migrationBias = cellParams[10][2];
     divProb_base = cellParams[11][2];
     pTypeStateTransition = cellParams[12][2];
-    migrationSpeed_inTumor = cellParams[13][2];
+    migrationBias_inTumor = cellParams[13][2];
+    migrationSpeed_inTumor = cellParams[14][2];
     rmax = 1.5*radius*2;
 
     if(phenotypeTrajectory.size() == 0 || phenotypeTrajectory.empty()){
@@ -100,4 +101,5 @@ void Cell::cd8_setKillProb(size_t step_count){
         }
     }
     killProb = killProb*pow(infScale, scale); //realize the impact of pos and negative influence in coordination with T cell boolean network
+    //std::cout << id << ": " << killProb << std::endl;
 }

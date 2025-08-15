@@ -25,7 +25,7 @@ public:
     // force functions
     std::array<double, 2> attractiveForce(std::array<double, 2> dx, double otherRadius);
     std::array<double, 2> repulsiveForce(std::array<double, 2> dx, double otherRadius);
-    void calculateForces(std::array<double, 2> otherX, double otherRadius, int &otherType);
+    void calculateForces(std::array<double, 2> otherX, double otherRadius, int &otherType, int &otherID);
     void resolveForces(double dt, std::array<double, 2> &tumorCenter, double &necroticRadius, double &necroticForce);
     void resetForces();
     void neighboringCells(std::array<double, 2> otherX, int otherID, int otherState);
@@ -87,8 +87,10 @@ public:
     bool compressed;
     double currentOverlap;
     std::vector<int> neighbors;
-    std::vector<std::array <double, 2>> distantCancerNeighbors;
-    std::vector<std::array <double, 2>> closeCancerNeighbors;
+    std::array <double, 2> cancerTarget;
+    double cancerDistance;
+    bool cancerNeighbor;
+
 
     // age, division, and lifespan
     double divProb;
@@ -107,8 +109,9 @@ public:
 
     // migration
     double migrationSpeed;
-    double migrationSpeed_inTumor; 
+    double migrationSpeed_inTumor;
     double migrationBias;
+    double migrationBias_inTumor;
 
     // cancer properties
     double pdl1Shift;

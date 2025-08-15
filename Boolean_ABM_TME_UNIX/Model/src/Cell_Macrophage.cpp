@@ -15,7 +15,8 @@ void Cell::initializeMacrophageCell(std::vector<std::vector<double> > &cellParam
     influenceRadius = cellParams[9][3];
     migrationBias = cellParams[10][3];
     pdl1WhenExpressed = cellParams[11][3];
-    migrationSpeed_inTumor = cellParams[12][3];
+    migrationBias_inTumor = cellParams[12][3];
+    migrationSpeed_inTumor = cellParams[13][3];
 
     rmax = 1.5*radius*2;
 }
@@ -36,7 +37,7 @@ void Cell::macrophage_differentiation(double dt) {
     double negInfluence = 1 - (1 - influences[2])*(1 - influences[3])*(1 - influences[5]);
     double p1 = kM1*posInfluence;
     double p2 = kM2*negInfluence;
-    auto p0 = static_cast<double>(state == 0);
+    auto p0 = static_cast<double>(state == 0); // 1 (if M0) or 0 (if not M0) , can't go backwards
     double sum = p0 + p1 + p2;
 
     std::array<double, 3> probs = {p0/sum,
