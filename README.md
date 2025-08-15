@@ -35,11 +35,11 @@ $ pip install -r requirements.txt
 3. This will build an executable runModel and install the necessary python packages to generate the parameter file. To run, you can call ./runModel as follows
 
 ```bash
-$ ./runModel <SAVE_FLD> <SAVE_IDX> <P_TYPE_STATE_TRANSITION> <DEATH_PROBABILITY_FACTOR> <KILL_PROBABILITY_FACTOR>
+$ ./runModel <SAVE_FLD> <SAVE_IDX> <P_TYPE_STATE_TRANSITION> <DEATH_PROBABILITY_FACTOR> <KILL_PROBABILITY_FACTOR> <NUMBER_OF_CLUSTERS> <SIZE_OF_CLUSTERS> <DISTANCE_BETWEEN> <RECRUITMENT_RATE_FACTOR> <MIGRATION_BIAS_FACTOR> <MIGRATION_CELLS>
 ```
 As an example:
 ```bash
-$ ./runModel modelPredictions 0 3 2 2
+$ ./runModel modelPredictions 1 1 1 1 2 5.5 1000 1 5 3
 ```
 
 ## Notes
