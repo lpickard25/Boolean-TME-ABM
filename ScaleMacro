@@ -1,0 +1,47 @@
+/*
+* This script creates new images with a scale bar from images in the subdirectories of the main given directory
+*/
+
+setBatchMode(true); 
+
+inputDirectory = getDirectory("Choose a Directory of Image Directories");
+//print("Selected input directory: " + inputDirectory);
+
+directoryList = getFileList(inputDirectory);
+
+for (dirIndex = 0; dirIndex < directoryList.length; dirIndex++) {
+    subDir = directoryList[dirIndex];
+
+    // Skip non-directories (directories end with /)
+    if (!endsWith(subDir, "/")) continue;
+
+    subDirPath = inputDirectory + subDir;
+    fileList = getFileList(subDirPath);
+
+	// Create 'scaled' subdirectory inside current subDir
+    scaledDir = subDirPath + "scaled/";
+    File.makeDirectory(scaledDir);
+
+for (i = 0; i < fileList.length; i++)
+{
+	//print("file:" + fileList[i]);
+	if (endsWith(fileList[i], "/")) continue;
+	open(subDirPath + fileList[i]);
+    	// Get the filename from the title of the image that's open 
+    	// We do this instead of using the imageFile parameter so that the
+    	// directory path is not included on the table
+	filename = File.getName(fileList[i]); 
+	print(filename);
+
+	run("Set Scale...", "distance=1 known=2 unit=microns");
+	run("Scale Bar...", "width=1000 height=500 thickness=40 font=80 bold overlay");
+	
+	// Save to scaled/ subfolder
+        savePath = scaledDir + filename;
+        saveAs("Jpeg", savePath);
+        close();
+}
+
+}
+print("closing")
+close("*");  // Closes all images

@@ -1,0 +1,63 @@
+/* this script analyzes the images in a directory of directories, allowing large batches to be done at once
+* for example: Main directory >> several subdirectories (ei different simulations) >> images (ei last day of the cancer cells from each replicate)
+* input is the main directory, output is a csv of the analyze particles results for each subdirectory
+*/
+
+
+run("Clear Results");
+setBatchMode(true); 
+
+inputDirectory = getDirectory("Choose a Directory of Image Directories");
+print("Selected input directory: " + inputDirectory);
+
+// gets a list of the files in the main directory
+directoryList = getFileList(inputDirectory);
+
+// iterates over these files
+for (dirIndex = 0; dirIndex < directoryList.length; dirIndex++) {
+    subDir = directoryList[dirIndex];
+
+    // Skip non-directories (directories end with /)
+    if (!endsWith(subDir, "/")) continue;
+
+	// get a list of files in the subdirectory
+    subDirPath = inputDirectory + subDir;
+    fileList = getFileList(subDirPath);
+
+	// iterates over these files, assumes they are all images, and analyzes each one
+    row = 0;
+    for (i = 0; i < fileList.length; i++) {
+        filePath = subDirPath + fileList[i];
+        //print("Opening: " + filePath);
+
+        open(filePath);
+        filename = getTitle();
+
+        run("8-bit");
+        run("Set Scale...", "distance=1 known=2 unit=microns");
+        setThreshold(46, 141, "raw");
+        setOption("BlackBackground", true);
+        run("Convert to Mask");
+        run("Analyze Particles...", "size=2000-Infinity show=Outlines display");
+
+	// adds a column to save the file name from which the particles are analyzed from
+        for (resultIndex = 0; row < nResults; resultIndex++) {
+            setResult("Filename", row, filename);
+            row++;
+        }
+
+        close(); // Close current image
+    }
+
+    updateResults();
+
+    // Save results CSV
+    resultsPath = inputDirectory + replace(subDir, "/", "") + "_results.csv";
+    print("Saving results to: " + resultsPath);
+    saveAs("Results", resultsPath);
+
+    close("*");  // Closes all images
+    run("Clear Results");
+}
+print("finished")
+setBatchMode(false);
